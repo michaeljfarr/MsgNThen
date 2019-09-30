@@ -1,0 +1,103 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using Microsoft.Extensions.Logging;
+using MsgNThen.Interfaces;
+using MsgNThen.Redis.Converters;
+using Newtonsoft.Json;
+using StackExchange.Redis;
+
+namespace MsgNThen.Redis
+{
+    class MessageGroupEventHandler : IMessageGroupHandler
+    {
+        private readonly ConnectionMultiplexer _redis;
+        private readonly IMessageDeliverer _messageDeliverer;
+        private readonly ILogger<MessageGroupEventHandler> _logger;
+
+        public MessageGroupEventHandler(ConnectionMultiplexer redis, IMessageDeliverer messageDeliverer, ILogger<MessageGroupEventHandler> logger)
+        {
+            _redis = redis;
+            _messageDeliverer = messageDeliverer;
+            _logger = logger;
+        }
+
+        private static RedisValue RedisSerialize<T>(T val)
+        {
+            return JsonConvert.SerializeObject(val);
+        }
+        private static T RedisDeserialize<T>(RedisValue json)
+        {
+            return JsonConvert.DeserializeObject<T>(json);
+        }
+
+        private class MessageGroupExpiry
+        {
+            public Guid G { get; set; }
+            public DateTime T { get; set; }
+        }
+
+        public void StartMessageGroup(Guid groupId)
+        {
+            var db = _redis.GetDatabase();
+            db.ListRightPush(RedisTaskMultiplexorConstants.MessageGroupQueueKey, groupId.ToByteArray());
+            var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
+
+            db.HashSet(messageGroupHashKey, new HashEntry[]{ new HashEntry("Created", DateTime.UtcNow.ToRedisValue())});
+        }
+
+        public void SetMessageGroupCount(Guid groupId, int messageCount, SimpleMessage andThen)
+        {
+            var db = _redis.GetDatabase();
+            db.ListRightPush(RedisTaskMultiplexorConstants.MessageGroupQueueKey, groupId.ToByteArray());
+            var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
+            db.HashSet(messageGroupHashKey, new HashEntry[]
+            {
+                new HashEntry("MsgCount", messageCount),
+                new HashEntry("Handled", 0),
+                new HashEntry("Prepared", DateTime.UtcNow.ToRedisValue()),
+                new HashEntry("AndThen", RedisSerialize(andThen)),
+            });
+        }
+
+        public void CompleteMessageGroupTransmission(Guid groupId)
+        {
+            var db = _redis.GetDatabase();
+            db.ListRightPush(RedisTaskMultiplexorConstants.MessageGroupQueueKey, groupId.ToByteArray());
+            var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
+            db.HashSet(messageGroupHashKey, "Transmitted", DateTime.UtcNow.ToRedisValue());
+        }
+
+        public void MessageHandled(Guid groupId, Guid messageId)
+        {
+            var db = _redis.GetDatabase();
+            var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
+            var msgIdsKey = RedisTaskMultiplexorConstants.MessageGroupMsgIdSetKeyPrefix + groupId;
+            
+            //using the count alone is insufficient if a message handled in an at-most-once configuration
+            db.HashIncrement(messageGroupHashKey, "Handled");
+            //so we need a set, although this significantly increases memory requirements and bandwidth to redis
+            db.SetRemove(msgIdsKey, messageId.ToByteArray());
+
+            if (db.SetLength(msgIdsKey) == 0)
+            {
+                LastMessageHandled(groupId);
+            }
+        }
+
+        //todo: add poll MessageGroupQueue
+        // if completed, delete straight away
+        // if last message handled, deliver and then delete
+        // if no message deleted or handled, delete after 1 hour
+
+        private void LastMessageHandled(Guid groupId)
+        {
+            var db = _redis.GetDatabase();
+            var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
+            var andThen = db.HashGet(messageGroupHashKey, "AndThen");
+            var andThenObj =  RedisDeserialize<SimpleMessage>(andThen);
+            _messageDeliverer.Deliver(andThenObj);
+            db.HashSet(messageGroupHashKey, "Completed", DateTime.UtcNow.ToRedisValue());
+        }
+    }
+}

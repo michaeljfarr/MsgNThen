@@ -8,7 +8,12 @@
         public const string RedisTaskMultiplexorPipePrefix = "RTP" + PathSeparator;
         public const string RedisTaskMultiplexorBroadcastPrefix = "RTB" + PathSeparator;
         public const string PipeNameSetKey = "RTT" + PathSeparator + "pipenames";
-        public const string ExpiryHashField = "expiry";
+
+
+        public const string MessageGroupHashKeyPrefix = "MGQ" + PathSeparator + "group" + PathSeparator;
+        public const string MessageGroupQueueKey = "MGQ" + PathSeparator + "groupid";
+        public const string MessageGroupMsgIdSetKeyPrefix = "MGQ" + PathSeparator + "msgids" + PathSeparator;
+
 
     }
 }

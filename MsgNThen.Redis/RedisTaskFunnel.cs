@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using MsgNThen.Redis.Converters;
 using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
 
@@ -63,7 +64,7 @@ namespace MsgNThen.Redis
                 //ensure the name of the new pipe exists for the pipe monitor (before checking list length)
                 db.SetAdd(RedisTaskMultiplexorConstants.PipeNameSetKey, parentPipeName);
                 //add the child to the parents hash set (and update the expiry time on it)
-                db.HashSet(parentInfoPath, childPipeName, ExpiryToTimeString(expiry ?? TimeSpan.FromDays(7)));
+                db.HashSet(parentInfoPath, childPipeName, DateConverters.ExpiryToTimeString(expiry ?? TimeSpan.FromDays(7)));
 
                 //add the message to the list
                 db.ListRightPush(childPipePath.PipePath, redisValue);
@@ -193,11 +194,6 @@ namespace MsgNThen.Redis
                 }
                 return new RedisPipeValue(pipeInfo, message, lockValue, false);
             }
-        }
-
-        private static string ExpiryToTimeString(TimeSpan expiry)
-        {
-            return DateTime.UtcNow.Add(expiry).ToString("s");
         }
     }
 }
