@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
 namespace MsgNThen.Rabbit
@@ -9,26 +10,21 @@ namespace MsgNThen.Rabbit
         private readonly RabbitConfig _rabbitConfig;
         private readonly ConnectionFactory _connectionFactory;
 
-        public RabbitConnectionFactory(RabbitConfig rabbitConfig)
+        public RabbitConnectionFactory(IOptionsMonitor<RabbitConfig> rabbitConfig)
         {
-            _rabbitConfig = rabbitConfig;
+            _rabbitConfig = rabbitConfig.CurrentValue;
             _connectionFactory = new ConnectionFactory
             {
-                UserName = rabbitConfig.UserName,
-                Password = rabbitConfig.Password,
-                VirtualHost = rabbitConfig.VirtualHost,
-                Port = rabbitConfig.Port
+                UserName = _rabbitConfig.UserName,
+                Password = _rabbitConfig.Password,
+                VirtualHost = _rabbitConfig.VirtualHost,
+                Port = _rabbitConfig.Port
             };
         }
 
         public IConnection Create()
         {
             return _connectionFactory.CreateConnection(_rabbitConfig.HostNames);
-        }
-
-        public static IServiceCollection ConfigureRabbit(IServiceCollection services,  IConfiguration configuration)
-        {
-            return services.Configure<RabbitConfig>(configuration);
         }
     }
 }

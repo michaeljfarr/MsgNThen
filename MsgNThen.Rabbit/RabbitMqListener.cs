@@ -23,6 +23,8 @@ namespace MsgNThen.Rabbit
             _logger = logger;
         }
 
+        public int NumTasks => _runningTasks.Count;
+
         private RabbitMqConsumer CreateConsumerAndListen(string queueName, ushort maxThreads)
         {
             var consumer = CreateConsumer();
