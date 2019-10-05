@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using MsgNThen.Interfaces;
@@ -22,14 +23,7 @@ namespace MsgNThen.Redis
             _logger = logger;
         }
 
-        private static RedisValue RedisSerialize<T>(T val)
-        {
-            return JsonConvert.SerializeObject(val);
-        }
-        private static T RedisDeserialize<T>(RedisValue json)
-        {
-            return JsonConvert.DeserializeObject<T>(json);
-        }
+
 
         private class MessageGroupExpiry
         {
@@ -56,7 +50,7 @@ namespace MsgNThen.Redis
                 new HashEntry("MsgCount", messageCount),
                 new HashEntry("Handled", 0),
                 new HashEntry("Prepared", DateTime.UtcNow.ToRedisValue()),
-                new HashEntry("AndThen", RedisSerialize(andThen)),
+                new HashEntry("AndThen", StaticRedisSerializer.RedisSerialize(andThen)),
             });
         }
 
@@ -66,6 +60,14 @@ namespace MsgNThen.Redis
             db.ListRightPush(RedisTaskMultiplexorConstants.MessageGroupQueueKey, groupId.ToByteArray());
             var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
             db.HashSet(messageGroupHashKey, "Transmitted", DateTime.UtcNow.ToRedisValue());
+        }
+
+        public void MessagesPrepared(Guid groupId, IEnumerable<Guid> messages)
+        {
+            var db = _redis.GetDatabase();
+            var msgIdsKey = RedisTaskMultiplexorConstants.MessageGroupMsgIdSetKeyPrefix + groupId;
+            db.SetAdd(msgIdsKey, messages.Select(a => (RedisValue)a.ToByteArray()).ToArray());
+
         }
 
         public void MessageHandled(Guid groupId, Guid messageId)
@@ -95,7 +97,7 @@ namespace MsgNThen.Redis
             var db = _redis.GetDatabase();
             var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
             var andThen = db.HashGet(messageGroupHashKey, "AndThen");
-            var andThenObj =  RedisDeserialize<SimpleMessage>(andThen);
+            var andThenObj = StaticRedisSerializer.RedisDeserialize<SimpleMessage>(andThen);
             _messageDeliverer.Deliver(andThenObj);
             db.HashSet(messageGroupHashKey, "Completed", DateTime.UtcNow.ToRedisValue());
         }
