@@ -14,8 +14,8 @@ namespace MsgNThen.Rabbit.Tests
     public class MsgNThenRabbitIntegration : IDisposable
     {
         private readonly ITestOutputHelper _output;
-        private const string ExchangeName = "TestEx1";
-        private const string QueueName = "TestQ2";
+        private const string ExchangeName = "TestEx";
+        private const string QueueName = "TestQ";
         private readonly BlockMessageHandler _messageHandler;
         private readonly IRabbitMqListener _listener;
         private readonly IMessagePublisher _publisher;
@@ -84,6 +84,11 @@ namespace MsgNThen.Rabbit.Tests
             _listener.Listen(QueueName, 10);
             Thread.Sleep(100);
             _messageHandler.Count.Should().BeGreaterThan(numHandled);
+            //drain the messages
+            for (int i = 0; i < 100 && _messageHandler.Count > numHandled; i++)
+            {
+                Thread.Sleep(100);
+            }
         }
 
 

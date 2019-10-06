@@ -4,6 +4,11 @@ using System.Collections.Generic;
 
 namespace MsgNThen.Redis
 {
+    /// <summary>
+    /// RedisTaskFunnels are a lightweight message queue system based on redis.  Messages are added to a redis "list" in a 2 level
+    /// hierarchy.  Each message has a parent and child "pipe name", the redis list name is the concatenation of those names.
+    /// The task funnel includes tracking for the child pipes nested within a parent.
+    /// </summary>
     public interface IRedisTaskFunnel
     {
         /// <summary>

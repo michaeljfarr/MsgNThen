@@ -1,12 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using MsgNThen.Interfaces;
-using MsgNThen.Rabbit;
-using MsgNThen.Rabbit.Tests;
-using RabbitMQ.Client;
+﻿using MsgNThen.Rabbit.Tests;
 
 namespace MsgNThen.TestConsole
 {
@@ -30,7 +22,7 @@ namespace MsgNThen.TestConsole
                 rabbitTester.SmallMessageThroughput(20000, 2000, maxTasks);
                 // (done) we can send/recieve 6000+ messages a second on single machine via a single queue (10 Tasks)
                 //Here are 2 examples from my Dell XPS 9550 with rabbit running on WSL ubuntu:
-                //maxTasks=20 => Write:31749.0/s, Read:6660.6
+                //maxTasks=20 => Write:31749.0/s, Read:6660.6  (CPU was at about 70%, up from a baseline of 15% caused by spotify and chrome)
                 //maxTasks=1 => Write:30160.7/s, Read:2153.7
 
                 // (done) we can start and stop listening from a queue

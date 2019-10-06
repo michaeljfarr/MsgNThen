@@ -11,6 +11,12 @@ namespace MsgNThen.Redis.Tests
 {
     public class TaskExecutorTests
     {
+
+        /// <summary>
+        /// Use redisTaskFunnel to send messages that are picked up by the mocked taskExecutor which increments tasksCalled.
+        ///  - Send 3 Messages
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public async Task ReleaseUnheldLock()
         {
