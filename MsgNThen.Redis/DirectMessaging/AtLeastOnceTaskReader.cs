@@ -44,12 +44,13 @@ namespace MsgNThen.Redis.DirectMessaging
             _pipeInfos = new BlockingCollection<PipeInfo>();
             _taskFunnel.ListenForPipeEvents(/*_taskExecutors.Keys, */_pipeInfos);
             ExecuteExisting(lockExpiry);
-            Parallel.ForEach(_pipeInfos.GetConsumingPartitioner(cancellationToken), new ParallelOptions(){MaxDegreeOfParallelism = _maxThreads, CancellationToken = cancellationToken }, pipeInfo =>
-            {
-                var taskExecutor = _taskExecutors[pipeInfo.ParentPipeName];
-                var message = _taskFunnel.TryReadMessage(true, pipeInfo, lockExpiry);
-                taskExecutor.Execute(pipeInfo, message);
-            });
+            Parallel.ForEach(_pipeInfos.GetConsumingPartitioner(cancellationToken), new ParallelOptions() { MaxDegreeOfParallelism = _maxThreads, CancellationToken = cancellationToken }, pipeInfo =>
+              {
+                  var taskExecutor = _taskExecutors[pipeInfo.ParentPipeName];
+                  var message = _taskFunnel.TryReadMessage(true, pipeInfo, lockExpiry);
+                  taskExecutor.Execute(pipeInfo, message);
+                  _taskFunnel.LockRelease(message, true);
+              });
         }
 
         private void ExecuteExisting(TimeSpan lockExpiry)
@@ -65,24 +66,35 @@ namespace MsgNThen.Redis.DirectMessaging
                     // - new events that arrive
                     // - events that fail and are re-added.
                     var maxReads = _taskFunnel.GetListLength(pipeInfo);
-                    var message = _taskFunnel.TryReadMessage(true, pipeInfo, lockExpiry);
+                    var batchSize = 1;
+                    var messageBatch = _taskFunnel.TryReadMessageBatch(true, pipeInfo, lockExpiry, batchSize);
 
-                    while (message?.LockValue != null)
+                    //this is still an early implementation.  The objectives are:
+                    //  - speed (obviously)
+                    //  - consistent number of active tasks.
+                    //  - batches released as soon as the last one completes
+
+                    while (messageBatch?.LockValue != null)
                     {
                         var taskExecutor = _taskExecutors[sourcePipe.Key];
-                        try
+                        foreach (var message in messageBatch.RedisValues)
                         {
-                            taskExecutor.Execute(pipeInfo, message);
-                            _taskFunnel.LockRelease(message, true);
-                            message = _taskFunnel.TryReadMessage(true, pipeInfo, lockExpiry);
+                            var redisMessage = new RedisPipeValue(messageBatch.PipeInfo, message, messageBatch.LockValue, messageBatch.Peaked);
+                            try
+                            {
+                                taskExecutor.Execute(pipeInfo, redisMessage);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.LogError(e,
+                                    $"Error handling from {pipeInfo.ParentPipeName}/{pipeInfo.ChildPipeName}");
+                                _taskFunnel.LockRelease(redisMessage, false);
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            _logger.LogError(e,
-                                $"Error handling from {pipeInfo.ParentPipeName}/{pipeInfo.ChildPipeName}");
-                            _taskFunnel.LockRelease(message, false);
-                            message = null;
-                        }
+
+                        _taskFunnel.LockReleaseBatch(messageBatch);
+                        messageBatch = _taskFunnel.TryReadMessageBatch(true, pipeInfo, lockExpiry, batchSize);
+
                     }
                 }
             }

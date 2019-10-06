@@ -65,11 +65,12 @@ namespace MsgNThen.Redis.DirectMessaging
 
                 //ensure the name of the new pipe exists for the pipe monitor (before checking list length)
                 db.SetAdd(RedisTaskMultiplexorConstants.PipeNameSetKey, parentPipeName);
+
                 //add the child to the parents hash set (and update the expiry time on it)
                 db.HashSet(parentInfoPath, childPipeName, DateConverters.ExpiryToTimeString(expiry ?? TimeSpan.FromDays(7)));
 
-                //add the message to the list
-                db.ListRightPush(childPipePath.PipePath, redisValue);
+                //add the message to the left of the list, and is later popped from the right.
+                db.ListLeftPush(childPipePath.PipePath, redisValue);
             }
             var executed = trans.Execute();
             if (!executed)
@@ -87,45 +88,26 @@ namespace MsgNThen.Redis.DirectMessaging
             var db = _redis.GetDatabase();
             return db.LockExtend(value.PipeInfo.LockPath, value.LockValue, lockExpiry);
         }
+
+        public void LockReleaseBatch(RedisPipeBatch batch)
+        {
+            var db = _redis.GetDatabase();
+            db.KeyDelete(batch.LockValue);
+        }
+
         public bool LockRelease(RedisPipeValue value, bool success)
         {
-            var lockRetained = LockExtend(value, TimeSpan.FromMinutes(30));
-            if (!lockRetained)
-            {
-                throw new ApplicationException($"Could not retain lock for {value.PipeInfo.LockPath} whilst trying to release.");
-            }
-            //since we have the lock, we should safely be able to pop the item from the queue.
             var db = _redis.GetDatabase();
-            var popped = false;
-            
-            if (success && value.Peaked)
+            if (value.Peaked)
             {
-                var poppedValue = db.ListLeftPop(value.PipeInfo.PipePath);
-                popped = poppedValue.HasValue;
-                if (popped)
+                if (!success)
                 {
-                    var same = poppedValue.CompareTo(value.RedisValue) == 0;
-                    if (!same)
-                    {
-                        //dont put the message back on the end of the queue
-                        //we don't have a way to detect permanently failing message
-                        //db.ListRightPush(value.PipeInfo.PipePath, poppedValue);
-                        _logger.LogError($"Queue {value.PipeInfo.PipePath} was different when releasing the lock, we did not put it back!");
-                    }
+                    //this is a Nack
+                    db.ListLeftPush(value.PipeInfo.PipePath, value.RedisValue);
                 }
             }
-            var unlocked = db.LockRelease(value.PipeInfo.LockPath, value.LockValue);
-            if (success && !popped)
-            {
-                _logger.LogError($"Queue {value.PipeInfo.LockPath} was entirely empty when releasing the lock!");
-            }
 
-            if (!unlocked)
-            {
-                _logger.LogError($"Failed to release lock {value.PipeInfo.PipePath} at end of LockRelease!");
-            }
-
-            return unlocked;
+            return true;
         }
 
         static bool ArraysEqual(byte[] a1, byte[] a2)
@@ -169,34 +151,61 @@ namespace MsgNThen.Redis.DirectMessaging
 
         public RedisPipeValue TryReadMessage(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry)
         {
-            var db = _redis.GetDatabase();
-            var lockValue = $"{Environment.MachineName}:{Guid.NewGuid()}";
-            var lockInfo = db.LockTake(pipeInfo.LockPath, lockValue, lockExpiry);
+            var batch = TryReadMessageBatch(peak, pipeInfo, lockExpiry, 1);
+            return new RedisPipeValue(pipeInfo, batch.RedisValues.FirstOrDefault(), batch.LockValue, batch.Peaked);
+        }
 
-            if (!lockInfo)
-            {
-                return null;
-            }
+        public RedisPipeBatch TryReadMessageBatch(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry, int batchSize)
+        {
+            var db = _redis.GetDatabase();
 
             if (peak)
             {
-                var message = db.ListGetByIndex(pipeInfo.PipePath, 0);
+                var batchAddress = $"{Environment.MachineName}:{Guid.NewGuid()}";
+                
+                //add the batch expiry to the hash set (and update the expiry time on it)
+                db.HashSet(RedisTaskMultiplexorConstants.BatchesSetKey, batchAddress, DateConverters.ExpiryToTimeString(lockExpiry));
+
+                var message = db.ListRightPopLeftPush(pipeInfo.PipePath, batchAddress);
                 if (!message.HasValue)
                 {
-                    db.LockRelease(pipeInfo.LockPath, lockValue);
-                    lockValue = null;
+                    batchAddress = null;
+                    return new RedisPipeBatch(pipeInfo, new RedisValue[0], null, true);
                 }
-                return new RedisPipeValue(pipeInfo, message, lockValue, true);
+
+                var messages = new List<RedisValue>() {message};
+                for (int i = 1; i < batchSize; i++)
+                {
+                    message = db.ListRightPopLeftPush(pipeInfo.PipePath, batchAddress);
+                    if (!message.HasValue)
+                    {
+                        break;
+                    }
+
+                    messages.Add(message);
+                }
+
+                return new RedisPipeBatch(pipeInfo, messages, batchAddress, true);
             }
             else
             {
-                var message = db.ListLeftPop(pipeInfo.PipePath);
+                var message = db.ListRightPop(pipeInfo.PipePath);
                 if (!message.HasValue)
                 {
-                    db.LockRelease(pipeInfo.LockPath, lockValue);
-                    lockValue = null;
+                    return new RedisPipeBatch(pipeInfo, new RedisValue[0], null, true);
                 }
-                return new RedisPipeValue(pipeInfo, message, lockValue, false);
+                var messages = new List<RedisValue>() { message };
+                for (int i = 1; i < batchSize; i++)
+                {
+                    message = db.ListRightPop(pipeInfo.PipePath);
+                    if (!message.HasValue)
+                    {
+                        break;
+                    }
+
+                    messages.Add(message);
+                }
+                return new RedisPipeBatch(pipeInfo, messages, null, false);
             }
         }
     }

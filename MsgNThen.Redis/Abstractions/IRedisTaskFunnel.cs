@@ -14,6 +14,19 @@ namespace MsgNThen.Redis.Abstractions
     ///      and reduces latency.
     ///  - Redis pub/sub is currently a broadcast of _any_ queue, which may be inefficient for clients that listen to quiet queues within a db containing a noisy one.
     ///  - Messages are kept in redis until a client reads them, clients will rediscover queues and subscriptions when they restart.
+    /// New Peak Mechanism
+    ///  - The TryReadMessage 'peak' moves the message from the primary queue onto a batch specific queue, which is destroyed if the batch succeeds, or is pushed
+    ///      back on to the origin queue if not.  Each batch is hash value that stores the location and a timestamp which indicates the resubmission time.
+    ///    Readers polls the this set of batch queues to resubmit a batch.
+    ///    Because the list is destroyed as a batch (although individuals can be resent), it might be difficult to manage a consistent level of task parallelism.
+    ///    Currently throughput is about 1000/sec, which might be just enough for what we are trying to achieve.  Hopefully we can improve that further though.
+    /// 
+    ///  Early Peak Mechanism
+    ///  - The TryReadMessage 'peak' will leave the message inside the queue and acquire a lock to restrict other clients trying to read at the same time.
+    ///    - It provides a very easy recovery if the client crashes, because the lock will just expire
+    ///    - The lock is not used if peek is false, and so it will got a lot faster.
+    ///
+    /// See this implementation for a simpler version on how this should work: https://gist.github.com/tenowg/c5de38cb1027ab875e56
     /// </remarks>
     public interface IRedisTaskFunnel
     {
@@ -24,6 +37,7 @@ namespace MsgNThen.Redis.Abstractions
             int maxListLength = int.MaxValue, TimeSpan? expiry = null);
 
         bool LockExtend(RedisPipeValue value, TimeSpan lockExpiry);
+        void LockReleaseBatch(RedisPipeBatch batch);
         bool LockRelease(RedisPipeValue value, bool success);
 
         /// <summary>
@@ -37,9 +51,9 @@ namespace MsgNThen.Redis.Abstractions
         /// Also, issues with infrastructure can lead to the lock being lost, so in general it is important to assume that messages
         /// will be processed at least once.
         /// </remarks>
-        RedisPipeValue TryReadMessage(bool peak, PipeInfo pipeInfo,
-            TimeSpan lockExpiry);
+        RedisPipeValue TryReadMessage(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry);
 
+        RedisPipeBatch TryReadMessageBatch(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry, int batchSize);
         IReadOnlyList<string> GetChildPipeNames(string parentPipeName);
         void ListenForPipeEvents(/*IEnumerable<string> parentPipeNames,*/
             BlockingCollection<PipeInfo> pipeInfos);
