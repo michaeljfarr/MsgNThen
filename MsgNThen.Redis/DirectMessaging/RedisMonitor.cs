@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.DirectMessaging
 {
     public class RedisMonitor
     {

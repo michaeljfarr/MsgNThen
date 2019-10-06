@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.Converters
 {
     /// <summary>
     /// See also https://devblogs.microsoft.com/pfxteam/parallelextensionsextras-tour-4-blockingcollectionextensions/

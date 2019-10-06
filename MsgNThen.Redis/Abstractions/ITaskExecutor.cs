@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.Abstractions
 {
     public interface ITaskExecutor
     {

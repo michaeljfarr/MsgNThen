@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using MsgNThen.Interfaces;
+using MsgNThen.Redis.NThen;
 using Xunit;
 
 namespace MsgNThen.Redis.Tests

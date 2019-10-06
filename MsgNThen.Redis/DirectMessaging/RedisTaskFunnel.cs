@@ -3,11 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using MsgNThen.Redis.Abstractions;
 using MsgNThen.Redis.Converters;
 using Newtonsoft.Json.Linq;
 using StackExchange.Redis;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.DirectMessaging
 {
     class RedisTaskFunnel : IRedisTaskFunnel
     {

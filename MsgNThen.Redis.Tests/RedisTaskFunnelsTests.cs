@@ -2,6 +2,7 @@ using System;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MsgNThen.Redis.Abstractions;
 using Xunit;
 
 namespace MsgNThen.Redis.Tests

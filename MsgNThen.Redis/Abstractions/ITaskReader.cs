@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.Abstractions
 {
     /// <summary>
     /// The Redis TaskReader reads tasks from IRedisTaskFunnel.ListenForPipeEvents which writes events (PipeInfo) to a

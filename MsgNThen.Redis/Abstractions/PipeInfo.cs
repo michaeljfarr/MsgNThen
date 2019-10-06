@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.Abstractions
 {
     public class PipeInfo{
         public string ParentPipeName { get; }

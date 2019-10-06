@@ -5,8 +5,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MsgNThen.Redis.Abstractions;
+using MsgNThen.Redis.Converters;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.DirectMessaging
 {
     class AtLeastOnceTaskReader : ITaskReader
     {

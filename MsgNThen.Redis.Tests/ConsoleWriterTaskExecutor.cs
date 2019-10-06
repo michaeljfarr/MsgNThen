@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using MsgNThen.Redis.Abstractions;
 
 namespace MsgNThen.Redis.Tests
 {

@@ -1,7 +1,8 @@
 ﻿using System;
+using MsgNThen.Redis.Converters;
 using StackExchange.Redis;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.Abstractions
 {
     public class RedisPipeValue
     {

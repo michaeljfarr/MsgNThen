@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using MsgNThen.Interfaces;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.NThen
 {
     public interface IMessageGroupHandler
     {

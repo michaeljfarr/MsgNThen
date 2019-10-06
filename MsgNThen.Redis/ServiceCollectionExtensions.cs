@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MsgNThen.Redis.Abstractions;
+using MsgNThen.Redis.DirectMessaging;
 using StackExchange.Redis;
 
 namespace MsgNThen.Redis

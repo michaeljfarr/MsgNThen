@@ -1,6 +1,6 @@
 ﻿using MsgNThen.Interfaces;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.NThen
 {
     public interface IMessageDeliverer
     {

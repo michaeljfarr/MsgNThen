@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.Extensions.Logging;
 using MsgNThen.Interfaces;
 using MsgNThen.Redis.Converters;
-using Newtonsoft.Json;
 using StackExchange.Redis;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.NThen
 {
     class MessageGroupEventHandler : IMessageGroupHandler
     {

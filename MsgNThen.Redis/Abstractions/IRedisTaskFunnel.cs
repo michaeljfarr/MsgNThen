@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.Abstractions
 {
     /// <summary>
     /// RedisTaskFunnels are a lightweight message queue system based on redis.  Messages are added to a redis "list" in a 2 level

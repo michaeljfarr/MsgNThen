@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using StackExchange.Redis;
 
-namespace MsgNThen.Redis
+namespace MsgNThen.Redis.Converters
 {
     static class RedisExtensions
     {
