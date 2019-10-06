@@ -37,9 +37,18 @@ namespace MsgNThen.Rabbit
             return new RabbitMqConsumer(_connection, this, _runningTasks, _logger);
         }
 
-        public void Listen(string queue, ushort maxThreads)
+        public bool Listen(string queue, ushort maxThreads)
         {
-            ListenInner(queue, maxThreads);
+            var consumer = ListenInner(queue, maxThreads);
+            return consumer.IsOpen;
+        }
+
+        public void Remove(string queue)
+        {
+            if (_consumers.TryRemove(queue, out var consumer))
+            {
+                consumer.Stop();
+            }
         }
 
         private RabbitMqConsumer ListenInner(string queue, ushort maxThreads)
@@ -124,10 +133,12 @@ namespace MsgNThen.Rabbit
                 _channel.BasicConsume(queue, false, _consumer);
             }
 
-            public void Stop()
+            public bool IsOpen => _channel.IsOpen;
+
+            public bool Stop()
             {
                 _channel.BasicCancel(_consumer.ConsumerTag);
-                //_consumer.IsRunning should be false now.
+                return !_consumer.IsRunning;// IsRunning should be false now.
             }
 
             /// <summary>

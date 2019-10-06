@@ -12,7 +12,14 @@ namespace MsgNThen.Redis
         public static void ConfigureRedis(this IServiceCollection services, IConfiguration configuration)
         {
             var redisOptions = ConfigurationOptions.Parse(configuration.RequireConfig("RedisConnection"));
+            //redisOptions.Ssl = false;
+            redisOptions.CertificateValidation += RedisOptions_CertificateValidation;
             services.AddSingleton(redisOptions);
+        }
+
+        private static bool RedisOptions_CertificateValidation(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
         }
 
         public static void AddRedisFactory(this IServiceCollection services)

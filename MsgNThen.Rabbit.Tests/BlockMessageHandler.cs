@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using MsgNThen.Interfaces;
 
-namespace MsgNThen.TestConsole
+namespace MsgNThen.Rabbit.Tests
 {
     public class BlockMessageHandler : IMessageHandler
     {
