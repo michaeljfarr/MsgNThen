@@ -42,7 +42,7 @@ namespace MsgNThen.Redis.DirectMessaging
                 throw new ApplicationException("Reader instance already started");
             }
             _pipeInfos = new BlockingCollection<PipeInfo>();
-            _taskFunnel.ListenForPipeEvents(_pipeInfos);
+            _taskFunnel.ListenForPipeEvents(/*_taskExecutors.Keys, */_pipeInfos);
             ExecuteExisting(lockExpiry);
             Parallel.ForEach(_pipeInfos.GetConsumingPartitioner(cancellationToken), new ParallelOptions(){MaxDegreeOfParallelism = _maxThreads, CancellationToken = cancellationToken }, pipeInfo =>
             {

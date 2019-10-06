@@ -7,8 +7,14 @@ namespace MsgNThen.Redis.Abstractions
     /// <summary>
     /// RedisTaskFunnels are a lightweight message queue system based on redis.  Messages are added to a redis "list" in a 2 level
     /// hierarchy.  Each message has a parent and child "pipe name", the redis list name is the concatenation of those names.
-    /// The task funnel includes tracking for the child pipes nested within a parent.
     /// </summary>
+    /// <remarks>
+    ///  - The task funnel includes tracking for the child pipes nested within a parent.
+    ///  - Redis pub/sub is used to publish notifications of messaging being sent, this is a slight overhead but it polling in the client
+    ///      and reduces latency.
+    ///  - Redis pub/sub is currently a broadcast of _any_ queue, which may be inefficient for clients that listen to quiet queues within a db containing a noisy one.
+    ///  - Messages are kept in redis until a client reads them, clients will rediscover queues and subscriptions when they restart.
+    /// </remarks>
     public interface IRedisTaskFunnel
     {
         /// <summary>
@@ -35,7 +41,8 @@ namespace MsgNThen.Redis.Abstractions
             TimeSpan lockExpiry);
 
         IReadOnlyList<string> GetChildPipeNames(string parentPipeName);
-        void ListenForPipeEvents(BlockingCollection<PipeInfo> pipeInfos);
+        void ListenForPipeEvents(/*IEnumerable<string> parentPipeNames,*/
+            BlockingCollection<PipeInfo> pipeInfos);
         long GetListLength(PipeInfo pipeInfo);
     }
 }

@@ -43,6 +43,7 @@ namespace MsgNThen.Redis.DirectMessaging
             return entries.Select(a => RedisExtensions.ReadAsString(a.Name)).ToList();
         }
 
+
         public (bool sent, bool clients) TrySendMessage(string parentPipeName, string childPipeName, object body, int maxListLength = int.MaxValue, TimeSpan? expiry = null)
         {
             if (body == null)
@@ -143,9 +144,11 @@ namespace MsgNThen.Redis.DirectMessaging
             return false;
         }
 
-        public void ListenForPipeEvents(BlockingCollection<PipeInfo> pipeInfos)
+        public void ListenForPipeEvents(/*IEnumerable<string> parentPipeNames,*/
+            BlockingCollection<PipeInfo> pipeInfos)
         {
             var sub = _redis.GetSubscriber();
+            //foreach (var parentPipeName in parentPipeNames){}
             sub.Subscribe(RedisTaskMultiplexorConstants.RedisTaskMultiplexorBroadcastPrefix, (channel, value) =>
             {
                 var eventObject = JObject.Parse(value);
