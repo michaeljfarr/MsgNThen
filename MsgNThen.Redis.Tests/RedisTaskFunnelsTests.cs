@@ -48,7 +48,7 @@ namespace MsgNThen.Redis.Tests
         }
 
         [Fact]
-        public void LockNotAcquiredFor()
+        public void ReadFromNonExistantOrEmptyQueue()
         {
             var redisTaskFunnel = CreateRedisTaskFunnel();
             var read = redisTaskFunnel.TryReadMessageBatch(true, PipeInfo.Create("emptyqueue", "emptypipe"), TimeSpan.FromSeconds(10), 1);
@@ -56,13 +56,19 @@ namespace MsgNThen.Redis.Tests
             read.RedisValues.Should().BeEmpty();
         }
 
+        /// <summary>
+        /// This tests the main happy path of this redisTaskFunnel (the low level implementation)
+        ///   - Send a message
+        ///   - Read it (with peek) and check it is the same message
+        ///   - Release the Holding List.
+        /// </summary>
         [Fact]
         public void TestSendReadAndRelease()
         {
             var redisTaskFunnel = CreateRedisTaskFunnel();
             var parentPipeName = "ReleaseSendLock";
             var childPipeName = Guid.NewGuid().ToString();
-            //do twice to ensure that lock is released properly after first read
+            //do twice to ensure correct tidyup takes place
             SendReadAndRelease(redisTaskFunnel, parentPipeName, childPipeName);
             SendReadAndRelease(redisTaskFunnel, parentPipeName, childPipeName);
         }
@@ -70,7 +76,8 @@ namespace MsgNThen.Redis.Tests
         private static void SendReadAndRelease(IRedisTaskFunnel redisTaskFunnel, string parentPipeName, string childPipeName)
         {
             //send a message
-            var sent = redisTaskFunnel.TrySendMessage(parentPipeName, childPipeName, "body", Int32.MaxValue,
+            var messageBody = "body";
+            var sent = redisTaskFunnel.TrySendMessage(parentPipeName, childPipeName, messageBody, Int32.MaxValue,
                 TimeSpan.FromMinutes(1));
             sent.sent.Should().BeTrue();
             //sent.clients.Should().BeFalse();
@@ -82,6 +89,7 @@ namespace MsgNThen.Redis.Tests
             read.RedisValues.Should().NotBeEmpty();
             read.RedisValues.First().HasValue.Should().BeTrue();
             var actualRedisPipeValue = read.RedisPipeValues.First();
+            actualRedisPipeValue.ValueString.Should().Be(messageBody);
 
             //try to release the lock without the wrong holdingListName
             var redisPipeValue = new RedisPipeValue(PipeInfo.Create(parentPipeName, childPipeName), "body", Guid.NewGuid().ToString(), true);
@@ -101,6 +109,50 @@ namespace MsgNThen.Redis.Tests
             extended = redisTaskFunnel.RetainHoldingList(read, TimeSpan.FromSeconds(1));
             extended.Should().BeFalse();
         }
+
+
+        [Fact]
+        public void TestSendAndRecover()
+        {
+            var redisTaskFunnel = CreateRedisTaskFunnel();
+            var parentPipeName = "SendAndRecover";
+            var childPipeName = Guid.NewGuid().ToString();
+
+            //send 2 messages
+            var messageBody1 = "body1";
+            var sent = redisTaskFunnel.TrySendMessage(parentPipeName, childPipeName, messageBody1, Int32.MaxValue,
+                TimeSpan.FromMinutes(1));
+            sent.sent.Should().BeTrue();
+            var messageBody2 = "body2";
+            sent = redisTaskFunnel.TrySendMessage(parentPipeName, childPipeName, messageBody2, Int32.MaxValue,
+                TimeSpan.FromMinutes(1));
+            sent.sent.Should().BeTrue();
+            //sent.clients.Should().BeFalse();
+
+            //read the batch
+            var pipeInfo = PipeInfo.Create(parentPipeName, childPipeName);
+            var read = redisTaskFunnel.TryReadMessageBatch(true, pipeInfo, TimeSpan.FromSeconds(1), 2);
+            read.Should().NotBeNull();
+            read.HoldingList.Should().NotBeNull();
+            read.RedisValues.Count.Should().Be(2);
+            read.RedisValues.First().HasValue.Should().BeTrue();
+            read.RedisValues.Skip(1).First().HasValue.Should().BeTrue();
+            read.RedisPipeValues.Any(a => a.ValueString == messageBody1).Should().BeTrue();
+            read.RedisPipeValues.Any(a => a.ValueString == messageBody2).Should().BeTrue();
+
+            //recover batch (redeliver its messages) 
+            redisTaskFunnel.RecoverBatch(read.HoldingList).Should().BeTrue();
+            read = redisTaskFunnel.TryReadMessageBatch(true, pipeInfo, TimeSpan.FromSeconds(1), 2);
+            read.Should().NotBeNull();
+            read.HoldingList.Should().NotBeNull();
+            read.RedisValues.Count.Should().Be(2);
+            read.RedisValues.First().HasValue.Should().BeTrue();
+            read.RedisValues.Skip(1).First().HasValue.Should().BeTrue();
+            var actualRedisPipeValue = read.RedisPipeValues.First();
+            read.RedisPipeValues.Any(a => a.ValueString == messageBody1).Should().BeTrue();
+            read.RedisPipeValues.Any(a => a.ValueString == messageBody2).Should().BeTrue();
+        }
+
 
 
         public static IRedisTaskFunnel CreateRedisTaskFunnel()

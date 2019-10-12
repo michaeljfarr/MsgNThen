@@ -21,7 +21,7 @@ namespace MsgNThen.Rabbit
             services.AddSingleton<IRabbitConnectionFactory, RabbitConnectionFactory>();
             services.AddSingleton<IConnection>(a=>a.GetRequiredService<IRabbitConnectionFactory>().Create());
             services.AddSingleton<IRabbitMqListener, RabbitMqListener>();
-            services.AddSingleton<IMessagePublisher, MessagePublisher>();
+            services.AddSingleton<IMessagePublisher, RabbitMessagePublisher>();
             
             return services;
         }

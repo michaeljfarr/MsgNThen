@@ -40,6 +40,7 @@ namespace MsgNThen.Redis.Abstractions
         bool RetainHoldingList(RedisPipeValue value, TimeSpan lockExpiry);
         void AfterExecuteBatch(RedisPipeBatch batch);
         void AfterExecute(RedisPipeValue value, bool success);
+        bool RecoverBatch(string batchAddress);
 
         // <summary>
         // Calls TryReadMessageBatch with a batch size of 1.

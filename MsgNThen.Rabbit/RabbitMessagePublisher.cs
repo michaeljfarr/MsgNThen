@@ -6,15 +6,15 @@ using RabbitMQ.Client.Framing;
 
 namespace MsgNThen.Rabbit
 {
-    public class MessagePublisher : IMessagePublisher
+    public class RabbitMessagePublisher : IMessagePublisher
     {
-        private readonly IConnection _connection;
-        private IModel _channel;
+        //private readonly IConnection _connection;
+        private readonly IModel _channel;
 
-        public MessagePublisher(IConnection connection)
+        public RabbitMessagePublisher(IConnection connection)
         {
-            _connection = connection;
-            _channel = _connection.CreateModel();
+            //_connection = connection;
+            _channel = connection.CreateModel();
             //            ch.Close(Constants.ReplySuccess, "Closing the channel");
 
         }
@@ -28,11 +28,7 @@ namespace MsgNThen.Rabbit
 
         public void PublishSingle(SimpleMessage message, SimpleMessage andThen)
         {
-            var groupId = Guid.NewGuid();
-
-            var basicProperties = ToBasicProperties(_channel.CreateBasicProperties(), message, groupId);
-
-            _channel.BasicPublish(message.Exchange, message.RoutingKey ?? "", true, basicProperties, message.Body);
+            PublishBatch(new[] {message}, andThen, 1);
         }
 
         public void PublishBatch(IEnumerable<SimpleMessage> messages, SimpleMessage andThen, int mode)

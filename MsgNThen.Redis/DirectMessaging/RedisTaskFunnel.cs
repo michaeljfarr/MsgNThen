@@ -104,8 +104,11 @@ namespace MsgNThen.Redis.DirectMessaging
                 return false;
             }
 
+            var (_, pipePath) = BatchInfo.ReadBatchInfo(existing);
+            var batchInfo = BatchInfo.MakeBatchInfo(lockExpiry, pipePath);
+
             db.HashSet(RedisTaskMultiplexorConstants.BatchesSetKey, holdingList,
-                DateConverters.ExpiryToTimeString(lockExpiry));
+                batchInfo);
             return true;
         }
 
@@ -115,6 +118,7 @@ namespace MsgNThen.Redis.DirectMessaging
             {
                 var db = _redis.GetDatabase();
                 db.HashDelete(RedisTaskMultiplexorConstants.BatchesSetKey, batch.HoldingList);
+                db.KeyDelete(batch.HoldingList);
             }
         }
 
@@ -146,6 +150,40 @@ namespace MsgNThen.Redis.DirectMessaging
                 }
             }
 
+        }
+
+        public bool RecoverBatch(string batchAddress)
+        {
+            var db = _redis.GetDatabase();
+            var existing = db.HashGet(RedisTaskMultiplexorConstants.BatchesSetKey, batchAddress);
+            if (!existing.HasValue)
+            {
+                return false;
+            }
+            var (_, pipePath) = BatchInfo.ReadBatchInfo(existing);
+            if (string.IsNullOrWhiteSpace(pipePath))
+            {
+                return false;
+            }
+
+            var batchSize = db.ListLength(batchAddress);
+            if (batchSize <= 0)
+            {
+                return false;
+            }
+            for (int i = 0; i < batchSize; i++)
+            {
+                var message = db.ListRightPopLeftPush(batchAddress, pipePath);
+                if (!message.HasValue)
+                {
+                    break;
+                }
+            }
+
+
+            db.HashDelete(RedisTaskMultiplexorConstants.BatchesSetKey, batchAddress);
+            db.KeyDelete(batchAddress);
+            return true;
         }
 
         static bool ArraysEqual(byte[] a1, byte[] a2)
@@ -198,7 +236,7 @@ namespace MsgNThen.Redis.DirectMessaging
         //    var batch = TryReadMessageBatch(peak, pipeInfo, lockExpiry, 1);
         //    return new RedisPipeValue(pipeInfo, batch.RedisValues.FirstOrDefault(), batch.HoldingList, batch.Peaked);
         //}
-
+        
         public RedisPipeBatch TryReadMessageBatch(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry, int batchSize)
         {
             var db = _redis.GetDatabase();
@@ -210,7 +248,7 @@ namespace MsgNThen.Redis.DirectMessaging
                 //Add the batch to the global list of batches by creating a field on the key 'BatchesSetKey'.
                 //The expiry time is the earliest time that the automated system can discard the message from the
                 //'holding list' created next.
-                db.HashSet(RedisTaskMultiplexorConstants.BatchesSetKey, batchAddress, DateConverters.ExpiryToTimeString(lockExpiry));
+                db.HashSet(RedisTaskMultiplexorConstants.BatchesSetKey, batchAddress, BatchInfo.MakeBatchInfo(lockExpiry, pipeInfo.PipePath));
 
                 //move the batch of messages from the incoming queue to a holding list
                 var message = db.ListRightPopLeftPush(pipeInfo.PipePath, batchAddress);
