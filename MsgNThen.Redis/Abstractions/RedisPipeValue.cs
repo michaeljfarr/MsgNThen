@@ -9,7 +9,7 @@ namespace MsgNThen.Redis.Abstractions
         private readonly RedisValue _redisValue;
         private readonly Lazy<object> _convertedValue;
 
-        public RedisPipeValue(PipeInfo pipeInfo, RedisValue redisValue, string lockValue, bool peaked)
+        public RedisPipeValue(PipeInfo pipeInfo, RedisValue redisValue, string batchHoldingList, bool peaked)
         {
             _redisValue = redisValue;
             _convertedValue = new Lazy<object>(() =>
@@ -19,14 +19,14 @@ namespace MsgNThen.Redis.Abstractions
                 return objectValue;
             });
             PipeInfo = pipeInfo;
-            LockValue = lockValue;
+            BatchHoldingList = batchHoldingList;
             Peaked = peaked;
         }
         internal RedisValue RedisValue => _redisValue;
         public string ValueString => RedisExtensions.ReadAsString(_redisValue);
         public object Value => _convertedValue.Value;
         public PipeInfo PipeInfo { get; }
-        public string LockValue { get; private set; }
+        public string BatchHoldingList { get; private set; }
         public bool Peaked { get; }
     }
 }

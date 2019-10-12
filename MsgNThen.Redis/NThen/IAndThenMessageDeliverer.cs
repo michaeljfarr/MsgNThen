@@ -2,7 +2,7 @@
 
 namespace MsgNThen.Redis.NThen
 {
-    public interface IMessageDeliverer
+    public interface IAndThenMessageDeliverer
     {
         void Deliver(SimpleMessage andThen);
     }

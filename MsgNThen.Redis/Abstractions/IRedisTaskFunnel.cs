@@ -36,27 +36,31 @@ namespace MsgNThen.Redis.Abstractions
         (bool sent, bool clients) TrySendMessage(string parentPipeName, string childPipeName, object body,
             int maxListLength = int.MaxValue, TimeSpan? expiry = null);
 
-        bool LockExtend(RedisPipeValue value, TimeSpan lockExpiry);
-        void LockReleaseBatch(RedisPipeBatch batch);
-        bool LockRelease(RedisPipeValue value, bool success);
+        bool RetainHoldingList(RedisPipeBatch value, TimeSpan lockExpiry);
+        bool RetainHoldingList(RedisPipeValue value, TimeSpan lockExpiry);
+        void AfterExecuteBatch(RedisPipeBatch batch);
+        void AfterExecute(RedisPipeValue value, bool success);
+
+        // <summary>
+        // Calls TryReadMessageBatch with a batch size of 1.
+        // </summary>
+        //RedisPipeValue TryReadMessage(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry);
 
         /// <summary>
-        /// Receive a message from a specific child pipe, ensuring that no other message is currently being processed from the same pipe.
-        /// If a lock can be created for the childPipe, either pop or peak a message from the left.
+        /// Reads up to batchSize messages from a list message with the following guarantees:
+        ///  - this will be the only process to read the items.
+        ///  - if peak is false, the items will be atomically moved on another list before returning.
         /// </summary>
         /// <remarks>
-        /// The caller must correctly use LockExtend and LockRelease to ensure the lock is maintained otherwise the message will be handled
-        /// by someone else.
-        /// If peak is true, the message stays on the queue until the caller releases it - otherwise the message is immediately removed.
-        /// Also, issues with infrastructure can lead to the lock being lost, so in general it is important to assume that messages
-        /// will be processed at least once.
+        ///  - The caller should call AfterExecute after each message to ensure that failed messages are resubmitted.
+        ///  - The caller should also call AfterExecuteBatch after all messages to ensure that the batch is destroyed.
+        ///  - If the message isn't processed in before  "lockExpiry" of time passes the caller should call RetainHoldingList.
         /// </remarks>
-        RedisPipeValue TryReadMessage(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry);
-
         RedisPipeBatch TryReadMessageBatch(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry, int batchSize);
         IReadOnlyList<string> GetChildPipeNames(string parentPipeName);
         void ListenForPipeEvents(/*IEnumerable<string> parentPipeNames,*/
             BlockingCollection<PipeInfo> pipeInfos);
         long GetListLength(PipeInfo pipeInfo);
+        void DestroyChildPipe(PipeInfo pipeInfo);
     }
 }

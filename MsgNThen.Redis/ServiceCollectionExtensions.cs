@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MsgNThen.Redis.Abstractions;
 using MsgNThen.Redis.DirectMessaging;
+using MsgNThen.Redis.NThen;
 using StackExchange.Redis;
 
 namespace MsgNThen.Redis
@@ -33,6 +34,12 @@ namespace MsgNThen.Redis
         {
             services.AddSingleton<RedisMonitor>();
         }
+
+        public static void AddRedisNThenEventHandler(this IServiceCollection services)
+        {
+            services.AddSingleton<IMessageGroupHandler, MessageGroupEventHandler>();
+        }
+
 
         public static void AddRedisPipework(this IServiceCollection services)
         {

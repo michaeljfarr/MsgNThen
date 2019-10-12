@@ -11,13 +11,13 @@ namespace MsgNThen.Redis.NThen
     class MessageGroupEventHandler : IMessageGroupHandler
     {
         private readonly ConnectionMultiplexer _redis;
-        private readonly IMessageDeliverer _messageDeliverer;
+        private readonly IAndThenMessageDeliverer _andThenMessageDeliverer;
         private readonly ILogger<MessageGroupEventHandler> _logger;
 
-        public MessageGroupEventHandler(ConnectionMultiplexer redis, IMessageDeliverer messageDeliverer, ILogger<MessageGroupEventHandler> logger)
+        public MessageGroupEventHandler(ConnectionMultiplexer redis, IAndThenMessageDeliverer andThenMessageDeliverer, ILogger<MessageGroupEventHandler> logger)
         {
             _redis = redis;
-            _messageDeliverer = messageDeliverer;
+            _andThenMessageDeliverer = andThenMessageDeliverer;
             _logger = logger;
         }
 
@@ -94,9 +94,14 @@ namespace MsgNThen.Redis.NThen
         {
             var db = _redis.GetDatabase();
             var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
+            var completed = db.HashGet(messageGroupHashKey, "Completed");
+            if (completed.HasValue)
+            {
+                return;
+            }
             var andThen = db.HashGet(messageGroupHashKey, "AndThen");
             var andThenObj = StaticRedisSerializer.RedisDeserialize<SimpleMessage>(andThen);
-            _messageDeliverer.Deliver(andThenObj);
+            _andThenMessageDeliverer.Deliver(andThenObj);
             db.HashSet(messageGroupHashKey, "Completed", DateTime.UtcNow.ToRedisValue());
         }
     }

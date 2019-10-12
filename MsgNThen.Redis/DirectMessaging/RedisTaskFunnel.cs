@@ -83,31 +83,69 @@ namespace MsgNThen.Redis.DirectMessaging
             return (true, listeners > 0);
         }
 
-        public bool LockExtend(RedisPipeValue value, TimeSpan lockExpiry)
+        public bool RetainHoldingList(RedisPipeBatch value, TimeSpan lockExpiry)
         {
-            var db = _redis.GetDatabase();
-            return db.LockExtend(value.PipeInfo.LockPath, value.LockValue, lockExpiry);
+            return RetainHoldingList(value.HoldingList, lockExpiry);
         }
 
-        public void LockReleaseBatch(RedisPipeBatch batch)
+        public bool RetainHoldingList(RedisPipeValue value, TimeSpan lockExpiry)
         {
-            var db = _redis.GetDatabase();
-            db.KeyDelete(batch.LockValue);
+            return RetainHoldingList(value.BatchHoldingList, lockExpiry);
         }
 
-        public bool LockRelease(RedisPipeValue value, bool success)
+        private bool RetainHoldingList(string holdingList, TimeSpan lockExpiry)
         {
             var db = _redis.GetDatabase();
-            if (value.Peaked)
+            //unfortunately Redis doesn't support When.NotExists here, so we have to check
+            //really we should do a transaction here.
+            var existing = db.HashGet(RedisTaskMultiplexorConstants.BatchesSetKey, holdingList);
+            if (!existing.HasValue)
             {
-                if (!success)
+                return false;
+            }
+
+            db.HashSet(RedisTaskMultiplexorConstants.BatchesSetKey, holdingList,
+                DateConverters.ExpiryToTimeString(lockExpiry));
+            return true;
+        }
+
+        public void AfterExecuteBatch(RedisPipeBatch batch)
+        {
+            if (batch.HoldingList != null)
+            {
+                var db = _redis.GetDatabase();
+                db.HashDelete(RedisTaskMultiplexorConstants.BatchesSetKey, batch.HoldingList);
+            }
+        }
+
+        public void AfterExecute(RedisPipeValue value, bool success)
+        {
+            var db = _redis.GetDatabase();
+            if (!success)
+            {
+                //this is a Nack
+                //whether we peeked it or not, just push it back where it was
+                db.ListLeftPush(value.PipeInfo.PipePath, value.RedisValue);
+            }
+            else
+            {
+                if (value.Peaked)
                 {
-                    //this is a Nack
-                    db.ListLeftPush(value.PipeInfo.PipePath, value.RedisValue);
+                    //when we peeked it, we moved the record to a 'holding list'
+                    //whether the invocation failed or succeeded we don't remove it from that list to minimize load on redis.
+                    //This means that if the application crashes before the batch is destroyed the batch will be resubmitted
+                    //So that makes the chance that this message will be re-executed twice: once from the re-push above
+                    //and once from the batch re-submission
+
+                    //later we can add a release strategy to do this: db.ListRemove(value.BatchHoldingList, value.RedisValue, 1);
+                    //or perhaps we can use the NThen redis data that tracks individual messages
+                }
+                else
+                {
+                    //when we originally read the message we just removed it from the list, so we definitely dont need to do anything
                 }
             }
 
-            return true;
         }
 
         static bool ArraysEqual(byte[] a1, byte[] a2)
@@ -149,11 +187,17 @@ namespace MsgNThen.Redis.DirectMessaging
             return length;
         }
 
-        public RedisPipeValue TryReadMessage(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry)
+        public void DestroyChildPipe(PipeInfo pipeInfo)
         {
-            var batch = TryReadMessageBatch(peak, pipeInfo, lockExpiry, 1);
-            return new RedisPipeValue(pipeInfo, batch.RedisValues.FirstOrDefault(), batch.LockValue, batch.Peaked);
+            var db = _redis.GetDatabase();
+            db.KeyDelete(pipeInfo.PipePath);
         }
+
+        //public RedisPipeValue TryReadMessage(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry)
+        //{
+        //    var batch = TryReadMessageBatch(peak, pipeInfo, lockExpiry, 1);
+        //    return new RedisPipeValue(pipeInfo, batch.RedisValues.FirstOrDefault(), batch.HoldingList, batch.Peaked);
+        //}
 
         public RedisPipeBatch TryReadMessageBatch(bool peak, PipeInfo pipeInfo, TimeSpan lockExpiry, int batchSize)
         {
@@ -162,10 +206,13 @@ namespace MsgNThen.Redis.DirectMessaging
             if (peak)
             {
                 var batchAddress = $"{Environment.MachineName}:{Guid.NewGuid()}";
-                
-                //add the batch expiry to the hash set (and update the expiry time on it)
+
+                //Add the batch to the global list of batches by creating a field on the key 'BatchesSetKey'.
+                //The expiry time is the earliest time that the automated system can discard the message from the
+                //'holding list' created next.
                 db.HashSet(RedisTaskMultiplexorConstants.BatchesSetKey, batchAddress, DateConverters.ExpiryToTimeString(lockExpiry));
 
+                //move the batch of messages from the incoming queue to a holding list
                 var message = db.ListRightPopLeftPush(pipeInfo.PipePath, batchAddress);
                 if (!message.HasValue)
                 {
