@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MsgNThen.Interfaces;
+using NSubstitute;
 using RabbitMQ.Client;
 using Xunit;
 using Xunit.Abstractions;
@@ -18,7 +19,7 @@ namespace MsgNThen.Rabbit.Tests
         private const string QueueName = "TestQ";
         private readonly BlockMessageHandler _messageHandler;
         private readonly IRabbitMqListener _listener;
-        private readonly IMessagePublisher _publisher;
+        private readonly IMessageAndThenPublisher _andThenPublisher;
         private readonly IConnection _rabbit;
 
         public MsgNThenRabbitIntegration(ITestOutputHelper output)
@@ -26,14 +27,17 @@ namespace MsgNThen.Rabbit.Tests
             _output = output;
             var serviceCollection = CreateServiceCollection();
             serviceCollection.AddSingleton<IMessageHandler, BlockMessageHandler>();
+            var messageGroupHandler = Substitute.For<IMessageGroupHandler>();
+            serviceCollection.AddSingleton<IMessageGroupHandler>(messageGroupHandler);
+
             var serviceProvider = serviceCollection.BuildServiceProvider();
             _messageHandler = (BlockMessageHandler)serviceProvider.GetRequiredService<IMessageHandler>();
             _listener = serviceProvider.GetRequiredService<IRabbitMqListener>();
-            _publisher = serviceProvider.GetRequiredService<IMessagePublisher>();
+            _andThenPublisher = serviceProvider.GetRequiredService<IMessageAndThenPublisher>();
             _rabbit = serviceProvider.GetRequiredService<IConnection>();
             _output.WriteLine("Binding");
 
-            _publisher.BindDirectQueue(ExchangeName, QueueName);
+            _andThenPublisher.BindDirectQueue(ExchangeName, QueueName);
         }
 
         [Theory]
@@ -42,7 +46,7 @@ namespace MsgNThen.Rabbit.Tests
         {
             _messageHandler.Block = true;
             _output.WriteLine("Sending warmup messages");
-            SendMessages(_publisher, ExchangeName, maxTasks*2);
+            SendMessages(_andThenPublisher, ExchangeName, maxTasks*2);
 
             _output.WriteLine("Listening");
             var isOpen = _listener.Listen(QueueName, maxTasks);
@@ -73,7 +77,7 @@ namespace MsgNThen.Rabbit.Tests
             
             var numHandled = _messageHandler.Count;
             //send some messages
-            SendMessages(_publisher, ExchangeName, 10);
+            SendMessages(_andThenPublisher, ExchangeName, 10);
             //see that no tasks get created while waiting for 1 second
             for (int i = 0; i < 10 && _listener.NumTasks == 0; i++)
             {
@@ -103,7 +107,7 @@ namespace MsgNThen.Rabbit.Tests
             _output.WriteLine($"Sending {numMessages} tiny messages");
 
             var writerSw = Stopwatch.StartNew();
-            SendMessages(_publisher, ExchangeName, numMessages);
+            SendMessages(_andThenPublisher, ExchangeName, numMessages);
             writerSw.Stop();
             var startNum = _messageHandler.Count;
             _messageHandler.Block = false;
@@ -127,19 +131,22 @@ namespace MsgNThen.Rabbit.Tests
         }
 
 
-        private static void SendMessages(IMessagePublisher publisher, string exchangeName, int numMessages)
+        private static void SendMessages(IMessageAndThenPublisher andThenPublisher, string exchangeName, int numMessages)
         {
             for (int i = 0; i < numMessages; i++)
             {
-                publisher.PublishSingle(new SimpleMessage()
+                andThenPublisher.PublishSingle(new SimpleMessage()
                 {
                     Body = new byte[1] { (byte)'a' },
                     Exchange = exchangeName,
                     RoutingKey = null,
                     Properties = new MessageProperties()
-                    {
-                    }
-                }, null);
+                }, new SimpleMessage()
+                {
+                    Properties = new MessageProperties(),
+                    Body = new byte[0],
+                    Exchange = "TestAndThen"
+                }, AndThenDeliveryMode.FromLastClient);
             }
         }
 

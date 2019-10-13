@@ -35,13 +35,15 @@ namespace MsgNThen.Redis.NThen
             db.ListRightPush(RedisTaskMultiplexorConstants.MessageGroupQueueKey, groupId.ToByteArray());
             var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
 
-            db.HashSet(messageGroupHashKey, new HashEntry[]{ new HashEntry("Created", DateTime.UtcNow.ToRedisValue())});
+            db.HashSet(messageGroupHashKey, new []
+            {
+                new HashEntry("Created", DateTime.UtcNow.ToRedisValue()),
+            });
         }
 
         public void SetMessageGroupCount(Guid groupId, int messageCount, SimpleMessage andThen)
         {
             var db = _redis.GetDatabase();
-            db.ListRightPush(RedisTaskMultiplexorConstants.MessageGroupQueueKey, groupId.ToByteArray());
             var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
             db.HashSet(messageGroupHashKey, new HashEntry[]
             {
@@ -55,7 +57,6 @@ namespace MsgNThen.Redis.NThen
         public void CompleteMessageGroupTransmission(Guid groupId)
         {
             var db = _redis.GetDatabase();
-            db.ListRightPush(RedisTaskMultiplexorConstants.MessageGroupQueueKey, groupId.ToByteArray());
             var messageGroupHashKey = RedisTaskMultiplexorConstants.MessageGroupHashKeyPrefix + groupId;
             db.HashSet(messageGroupHashKey, "Transmitted", DateTime.UtcNow.ToRedisValue());
         }
@@ -65,7 +66,6 @@ namespace MsgNThen.Redis.NThen
             var db = _redis.GetDatabase();
             var msgIdsKey = RedisTaskMultiplexorConstants.MessageGroupMsgIdSetKeyPrefix + groupId;
             db.SetAdd(msgIdsKey, messages.Select(a => (RedisValue)a.ToByteArray()).ToArray());
-
         }
 
         public void MessageHandled(Guid groupId, Guid messageId)
