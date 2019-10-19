@@ -15,6 +15,7 @@
     <ProjectReference Include="..\MsgNThen.Interfaces\MsgNThen.Interfaces.csproj" />
     <ProjectReference Include="..\MsgNThen.Rabbit.Tests\MsgNThen.Rabbit.Tests.csproj" />
     <ProjectReference Include="..\MsgNThen.Rabbit\MsgNThen.Rabbit.csproj" />
+    <ProjectReference Include="..\MsgNThen.Redis\MsgNThen.Redis.csproj" />
   </ItemGroup>
 
   <ItemGroup>

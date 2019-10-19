@@ -25,7 +25,7 @@ namespace MsgNThen.Rabbit
         
             var basicProperties = ToBasicProperties(_channel.CreateBasicProperties(), message);
             ApplyHeaders(extraHeaders, basicProperties);
-            _channel.BasicPublish(message.Exchange, message.RoutingKey, true, basicProperties, message.Body);
+            _channel.BasicPublish(message.Exchange, message.RoutingKey ?? "", true, basicProperties, message.Body);
         }
 
         private static void ApplyHeaders(IDictionary<string, object> extraHeaders, IBasicProperties basicProperties)
@@ -54,15 +54,15 @@ namespace MsgNThen.Rabbit
 
         private static IBasicProperties ToBasicProperties(IBasicProperties basicProperties, SimpleMessage message)
         {
-            if (!string.IsNullOrWhiteSpace(message.Properties.CorrelationId))
+            if (!string.IsNullOrWhiteSpace(message.Properties?.CorrelationId))
             {
                 basicProperties.CorrelationId = message.Properties.CorrelationId;
             }
-            if (!string.IsNullOrWhiteSpace(message.Properties.MessageId))
+            if (!string.IsNullOrWhiteSpace(message.Properties?.MessageId))
             {
                 basicProperties.MessageId = message.Properties.MessageId;
             }
-            if (!string.IsNullOrWhiteSpace(message.Properties.CorrelationId))
+            if (!string.IsNullOrWhiteSpace(message.Properties?.CorrelationId))
             {
                 basicProperties.CorrelationId = message.Properties.CorrelationId;
             }
