@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MsgNThen.Rabbit\MsgNThen.Rabbit.csproj" />
+    <ProjectReference Include="..\MsgNThen.Redis\MsgNThen.Redis.csproj" />
+  </ItemGroup>
+
+</Project>

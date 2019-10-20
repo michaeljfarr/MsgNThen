@@ -13,7 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsgNThen.Redis", "MsgNThen.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsgNThen.Redis.Tests", "MsgNThen.Redis.Tests\MsgNThen.Redis.Tests.csproj", "{657F57D2-0B12-45D3-8080-16513297C666}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsgNThen.Rabbit.Tests", "MsgNThen.Rabbit.Tests\MsgNThen.Rabbit.Tests.csproj", "{6539EF8C-021D-434C-A109-65699E301264}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsgNThen.Rabbit.Tests", "MsgNThen.Rabbit.Tests\MsgNThen.Rabbit.Tests.csproj", "{6539EF8C-021D-434C-A109-65699E301264}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsgNThen.Adapter", "MsgNThen.Adapter\MsgNThen.Adapter.csproj", "{83649CED-6D0B-4D6D-AED7-CAA2EAED3CA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsgNThen.Adapter.Tests", "MsgNThen.Adapter.Tests\MsgNThen.Adapter.Tests.csproj", "{6F6C3BBA-1E48-43B7-83BA-29468DACD62C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +49,14 @@ Global
 		{6539EF8C-021D-434C-A109-65699E301264}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6539EF8C-021D-434C-A109-65699E301264}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6539EF8C-021D-434C-A109-65699E301264}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83649CED-6D0B-4D6D-AED7-CAA2EAED3CA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83649CED-6D0B-4D6D-AED7-CAA2EAED3CA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83649CED-6D0B-4D6D-AED7-CAA2EAED3CA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83649CED-6D0B-4D6D-AED7-CAA2EAED3CA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F6C3BBA-1E48-43B7-83BA-29468DACD62C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F6C3BBA-1E48-43B7-83BA-29468DACD62C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F6C3BBA-1E48-43B7-83BA-29468DACD62C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F6C3BBA-1E48-43B7-83BA-29468DACD62C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
