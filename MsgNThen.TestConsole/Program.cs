@@ -96,11 +96,14 @@ namespace MsgNThen.TestConsole
             messageHandler.Block.Set();
             WaitTill(messageHandler, 2).Should().BeTrue();
             WaitTill(messageHandler, 3).Should().BeFalse();
+            messageHandler.Received.Should().Be(3);
             messageHandler.Block.Set();
             WaitTill(messageHandler, 3).Should().BeTrue();
+            messageHandler.Received.Should().Be(3);
             messageHandler.Block.Set();
             WaitTill(messageHandler, 4).Should().BeTrue();
             messageHandler.Handled.Should().Be(4);
+            messageHandler.Received.Should().Be(4);
             serviceProvider.Dispose();
         }
 

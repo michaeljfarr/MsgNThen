@@ -35,6 +35,9 @@ namespace MsgNThen.Rabbit.Tests
                 var groupId = new Guid((byte[]) groupIdObj);
                 _messageGroupHandler.MessageHandled(groupId, messageId);
             }
+            else
+            {
+            }
 
             return Task.FromResult(AckResult.Ack);
         }
