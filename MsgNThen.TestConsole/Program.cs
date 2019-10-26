@@ -39,7 +39,7 @@ namespace MsgNThen.TestConsole
 
         static void Main(string[] args)
         {
-            var adapterTest = new AdapterIntegrationTests();
+            var adapterTest = new BasicIntegrationTests();
             adapterTest.SendThreeAndWaitForFourth();
         }
 

@@ -13,7 +13,7 @@ using Xunit;
 
 namespace MsgNThen.Adapter.Tests
 {
-    public class AdapterIntegrationTests
+    public class BasicIntegrationTests
     {
 
         public static ServiceCollection CreateServiceCollection()
