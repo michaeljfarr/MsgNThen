@@ -33,20 +33,25 @@ namespace MsgNThen.Samples.Web
     {
         public static async Task Main(string[] args)
         {
-            
-            //We should be an IHostedService
+            //create a standard HostBuilder, but with a MsgNThen Server instead of Kestrel
             var hostBuilder = CreateHostBuilder(args);
             var build = hostBuilder.Build();
-
-            var msgNThenHandler = build.Services.GetRequiredService<IMessageHandler>();
             var startTask = build.StartAsync();
+
+            await SendDummyMessage(build);
+
+            await startTask;
+        }
+
+        private static async Task SendDummyMessage(IHost build)
+        {
+            var msgNThenHandler = build.Services.GetRequiredService<IMessageHandler>();
+            
             await Task.Delay(500);
 
             IHandledMessage message = new HandledMessageWrapper(new BasicDeliverEventArgs(
                 "consumer", 1, false, "ex", "rout", new BasicProperties(), new byte[0]));
             await msgNThenHandler.HandleMessageTask(message);
-
-            await startTask;
         }
 
 
