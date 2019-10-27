@@ -94,6 +94,7 @@ namespace MsgNThen.Adapter
 
         private static (Guid messageGroupId, Guid messageId)? GetMessageGroupInfo(IHandledMessage message)
         {
+            //todo: make string constants (after work on generic listener and URI delivery method)
             object groupIdObj = null;
             if ((message.Properties.Headers?.TryGetValue("MessageGroupId", out groupIdObj) ?? false) &&
                 (groupIdObj is string groupIdStr) &&
@@ -108,12 +109,15 @@ namespace MsgNThen.Adapter
 
         public void Listen()
         {
-            //throw new NotImplementedException();
+            //todo: add listener code, preferably using generic Uri/endpoint system.
+            //todo: make SimpleMessage more generic, use Uris to:
+            // + target SQS, RabbitMQ, Redis, Http endpoints
+            // + will use dictionary to make scheme handlers
         }
 
         public void StopListening()
         {
-            //throw new NotImplementedException();
+            //todo: stop listener here.
         }
     }
 }

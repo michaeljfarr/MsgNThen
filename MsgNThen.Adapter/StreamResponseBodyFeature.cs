@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace MsgNThen.Adapter
 {
-    public class StreamResponseBodyFeature : IHttpResponseBodyFeature
+    class StreamResponseBodyFeature : IHttpResponseBodyFeature
     {
         private PipeWriter _pipeWriter;
         private bool _started;

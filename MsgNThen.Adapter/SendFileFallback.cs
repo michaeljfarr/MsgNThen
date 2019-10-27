@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace MsgNThen.Adapter
 {
-    public static class SendFileFallback
+    static class SendFileFallback
     {
         public static async Task SendFileAsync(
             Stream destination,

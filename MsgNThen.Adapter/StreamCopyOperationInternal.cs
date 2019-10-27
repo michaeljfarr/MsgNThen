@@ -8,8 +8,6 @@ namespace MsgNThen.Adapter
 {
     internal static class StreamCopyOperationInternal
     {
-        private const int DefaultBufferSize = 4096;
-
         public static async Task CopyToAsync(
             Stream source,
             Stream destination,
