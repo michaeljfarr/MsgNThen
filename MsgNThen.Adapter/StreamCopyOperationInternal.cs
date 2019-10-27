@@ -10,15 +10,6 @@ namespace MsgNThen.Adapter
     {
         private const int DefaultBufferSize = 4096;
 
-        public static Task CopyToAsync(
-            Stream source,
-            Stream destination,
-            long? count,
-            CancellationToken cancel)
-        {
-            return StreamCopyOperationInternal.CopyToAsync(source, destination, count, 4096, cancel);
-        }
-
         public static async Task CopyToAsync(
             Stream source,
             Stream destination,

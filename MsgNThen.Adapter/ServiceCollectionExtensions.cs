@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MsgNThen.Interfaces;
-using MsgNThen.Redis.Abstractions;
-using MsgNThen.Redis.DirectMessaging;
-using MsgNThen.Redis.NThen;
 
 
 namespace MsgNThen.Adapter
