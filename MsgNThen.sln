@@ -19,9 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsgNThen.Adapter", "MsgNThe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsgNThen.Adapter.Tests", "MsgNThen.Adapter.Tests\MsgNThen.Adapter.Tests.csproj", "{6F6C3BBA-1E48-43B7-83BA-29468DACD62C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsgNThen.Samples.Web", "MsgNThen.Samples.Web\MsgNThen.Samples.Web.csproj", "{D38DF067-0240-4FF0-B308-63B4BB0786CC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApplication1", "WebApplication1\WebApplication1.csproj", "{C37BE997-7DD9-482F-A182-E5ED70DC21AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsgNThen.Samples.Web", "MsgNThen.Samples.Web\MsgNThen.Samples.Web.csproj", "{D38DF067-0240-4FF0-B308-63B4BB0786CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -65,10 +63,6 @@ Global
 		{D38DF067-0240-4FF0-B308-63B4BB0786CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D38DF067-0240-4FF0-B308-63B4BB0786CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D38DF067-0240-4FF0-B308-63B4BB0786CC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C37BE997-7DD9-482F-A182-E5ED70DC21AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C37BE997-7DD9-482F-A182-E5ED70DC21AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C37BE997-7DD9-482F-A182-E5ED70DC21AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C37BE997-7DD9-482F-A182-E5ED70DC21AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
