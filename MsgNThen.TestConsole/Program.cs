@@ -1,21 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using FluentAssertions;
+﻿using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MsgNThen.Adapter.Tests;
-using MsgNThen.Interfaces;
 using MsgNThen.Rabbit;
 using MsgNThen.Rabbit.Tests;
 using MsgNThen.Redis;
-using MsgNThen.Redis.NThen;
-using NSubstitute;
-using RabbitMQ.Client;
 
 namespace MsgNThen.TestConsole
 {
-    
-
     class Program
     {
         public static ServiceCollection CreateServiceCollection()

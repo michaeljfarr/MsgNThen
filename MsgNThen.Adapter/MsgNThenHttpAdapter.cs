@@ -32,12 +32,16 @@ namespace MsgNThen.Adapter
             }
             try
             {
-                //todo: fix performance
                 var bytes = message.Body;
+
+                //note: This may not be the correct way to implement the FeatureCollection.  In most of the available samples, 
+                //features are static and the HttpContext is customized so it can be manipulated directly within this method.
+                //For the time being, this approach is very easy and provides better decoupling.  When things get more complicated
+                //we may rever to the other approach.
                 var requestFeatures = new FeatureCollection();
                 var messageRequestFeature = new HttpRequestFeature
                 {
-                    Path = "/weatherforecast",
+                    Path = $"/{message.RoutingKey}",
                     Body = new MemoryStream(bytes),
                     Method = "GET",
                     Headers = new HeaderDictionary(),
@@ -49,7 +53,7 @@ namespace MsgNThen.Adapter
                         messageRequestFeature.Headers[property.Key] = property.Value?.ToString();
                     }
                 }
-
+                
                 messageRequestFeature.Headers["MessageId"] = message.Properties.MessageId;
                 messageRequestFeature.Headers["AppId"] = message.Properties.AppId;
                 messageRequestFeature.Headers["ReplyTo"] = message.Properties.ReplyTo;

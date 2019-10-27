@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace MsgNThen.Samples.Web.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
@@ -24,6 +24,8 @@ namespace MsgNThen.Samples.Web.Controllers
         }
 
         [HttpGet]
+        [Route("/weatherforecast")]
+        [Route("/exampleroute")]
         public IEnumerable<WeatherForecast> Get()
         {
             var rng = new Random();

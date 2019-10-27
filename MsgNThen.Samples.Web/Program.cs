@@ -36,11 +36,14 @@ namespace MsgNThen.Samples.Web
             //create a standard HostBuilder, but with a MsgNThen Server instead of Kestrel
             var hostBuilder = CreateHostBuilder(args);
             var build = hostBuilder.Build();
-            var startTask = build.StartAsync();
+            var runTask = build.RunAsync();
 
             await SendDummyMessage(build);
 
-            await startTask;
+            await runTask;
+            //uncomment if you want a way to bin the server and exit the process.
+            //await build.StopAsync();
+            //((IDisposable)build.Services).Dispose();
         }
 
         private static async Task SendDummyMessage(IHost build)
@@ -48,9 +51,9 @@ namespace MsgNThen.Samples.Web
             var msgNThenHandler = build.Services.GetRequiredService<IMessageHandler>();
             
             await Task.Delay(500);
-
+            
             IHandledMessage message = new HandledMessageWrapper(new BasicDeliverEventArgs(
-                "consumer", 1, false, "ex", "rout", new BasicProperties(), new byte[0]));
+                "consumer", 1, false, "ex", "exampleroute", new BasicProperties(), new byte[0]));
             await msgNThenHandler.HandleMessageTask(message);
         }
 
