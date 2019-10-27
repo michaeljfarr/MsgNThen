@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,26 +35,6 @@ namespace MsgNThen.Samples.Web
         }
         public static void ConfigureStatic(IApplicationBuilder app)
         {
-
-            app.Use(async (context, next) =>
-            {
-                var messageIdString = context.Request.Headers["MessageId"];
-                var groupIdString = context.Request.Headers["GroupId"];
-                if (!Guid.TryParse(messageIdString, out var messageId) ||
-                    !Guid.TryParse(groupIdString, out var groupId))
-                {
-                    //logger.LogError($"Invalid MessageId({messageIdString}) or GroupId({groupIdString})");
-                    //return;
-                }
-                // Do work that doesn't write to the Response.
-                if (next != null)
-                {
-                    await next.Invoke();
-                }
-                // Do logging or other work that doesn't write to the Response.
-                //messageGroupHandler.MessageHandled(groupId, messageId);
-            });
-
             app.UseRouting();
 
             app.UseAuthorization();

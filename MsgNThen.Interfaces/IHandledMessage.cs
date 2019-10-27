@@ -1,5 +1,6 @@
 ﻿namespace MsgNThen.Interfaces
 {
+    //Todo: rename to IMsgNThenMessage
     public interface IHandledMessage
     {
         byte[] Body { get;  }

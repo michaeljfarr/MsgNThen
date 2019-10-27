@@ -31,6 +31,7 @@ namespace MsgNThen.Adapter.Tests
             services.AddRedisMonitor();
             services.AddRedisPipework();
             services.AddRedisNThenEventHandler();
+            services.AddMsgNThenAdapter();
 
             return services;
         }

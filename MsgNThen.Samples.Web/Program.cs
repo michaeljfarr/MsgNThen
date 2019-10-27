@@ -21,6 +21,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MsgNThen.Adapter;
+using MsgNThen.Interfaces;
+using MsgNThen.Rabbit;
+using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Framing;
 
 namespace MsgNThen.Samples.Web
 {
@@ -43,48 +48,7 @@ namespace MsgNThen.Samples.Web
     //    }
     //}
 
-    public class MsgNThenServer : IServer
-    {
-        public MsgNThenServer()
-        {
-            Features = new FeatureCollection();
-            //MsgNThenRequestFeature Features.Set<IHttpRequestFeature>((IHttpRequestFeature)new HttpRequestFeature());
-            Features.Set<IHttpResponseFeature>((IHttpResponseFeature)new HttpResponseFeature());
-
-        }
-        public void Dispose()
-        {
-        }
-
-        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
-        {
-            var bytes = new byte[1];
-            var requestFeatures = new FeatureCollection();
-            var messageRequestFeature = new HttpRequestFeature();
-            messageRequestFeature.Path = "/weatherforecast";
-            messageRequestFeature.Body = new MemoryStream(bytes);
-            messageRequestFeature.Method = "GET";
-            messageRequestFeature.Headers = new HeaderDictionary();
-            var responseStream = new MemoryStream();
-            var responseBody = new StreamResponseBodyFeature(responseStream);
-            var httpResponseFeature = new HttpResponseFeature { Body = responseStream };
-
-            requestFeatures.Set<IHttpResponseBodyFeature>(responseBody);
-            requestFeatures.Set<IHttpRequestFeature>(messageRequestFeature);
-            requestFeatures.Set<IHttpResponseFeature>(httpResponseFeature);
-            var context = application.CreateContext(requestFeatures);
-            application.ProcessRequestAsync(context);
-
-            return Task.Delay(100);
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            return Task.Delay(100);
-        }
-
-        public IFeatureCollection Features { get; }
-    }
+    
     //public class MsgNThenService : IHostedService
     //{
     //    public Task StartAsync(CancellationToken cancellationToken)
@@ -101,43 +65,20 @@ namespace MsgNThen.Samples.Web
     {
         public static async Task Main(string[] args)
         {
+            
             //We should be an IHostedService
             var hostBuilder = CreateHostBuilder(args);
             var build = hostBuilder.Build();
-            
-            //this._hostedServices = this.Services.GetService<IEnumerable<IHostedService>>();
-            var applicationBuilderFactory = build.Services.GetRequiredService<IApplicationBuilderFactory>();
-            var contextFactory = build.Services.GetRequiredService<IHttpContextFactory>();
-            var hostedServices = build.Services.GetRequiredService<IEnumerable<IHostedService>>();
-            build.Run();
 
-            var featureCollection = new FeatureCollection();
-            featureCollection.Set<IHttpRequestFeature>((IHttpRequestFeature)new HttpRequestFeature());
-            featureCollection.Set<IHttpResponseFeature>((IHttpResponseFeature)new HttpResponseFeature());
-            var applicationBuilder = applicationBuilderFactory.CreateBuilder(featureCollection);
+            var msgNThenHandler = build.Services.GetRequiredService<IMessageHandler>();
+            var startTask = build.StartAsync();
+            await Task.Delay(500);
 
-            //Startup.ConfigureStatic(applicationBuilder);
-            var testDelegate = applicationBuilder.Build();
+            IHandledMessage message = new HandledMessageWrapper(new BasicDeliverEventArgs(
+                "consumer", 1, false, "ex", "rout", new BasicProperties(), new byte[0]));
+            await msgNThenHandler.HandleMessageTask(message);
 
-            var context = contextFactory.Create(featureCollection);
-            context.Request.Path = "/weatherforecast";
-            var bytes = new byte[0];
-            context.Request.Body = new MemoryStream(bytes);
-            context.User = ClaimsPrincipal.Current;
-            context.Request.ContentLength = null;
-            context.Request.Host = HostString.FromUriComponent("localhost");
-            context.Request.Method = "GET";
-            context.Response.Body = new MemoryStream();
-            //context.Request.PathBase = PathString.FromUriComponent(context.Request.Path);
-            //context.Request.
-            //var initator = new MsgnThenInitiator(logger, testDelegate);
-            await testDelegate.Invoke(context);
-            while (true)
-            {
-                Thread.Sleep(500);
-            }
-
-            //build.Run();
+            await startTask;
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -211,7 +152,7 @@ namespace MsgNThen.Samples.Web
         {
             //This adds GenericWebHostService, but without Microsoft.AspNetCore.WebHost.ConfigureWebDefaults which excludes:
             // - UseStaticWebAssets, UseKestrel, UseIIS and UseIISIntegration
-            // - UseKestrel creates a KestrelServer:IServer
+            // - UseKestrel creates a KestrelServer:IServer to handle the HTTP protocol, but we use MsgNThenServer just to direct messages from Rabbit.
             builder.ConfigureServices((hostingContext, services) =>
             {
                 //services.AddSingleton<IHttpContextFactory, MsgNThenContextFactory>();
@@ -228,10 +169,8 @@ namespace MsgNThen.Samples.Web
             });
             builder.ConfigureServices((hostingContext, services) =>
             {
-                
                 services.AddRouting();
-                services.AddSingleton<IServer, MsgNThenServer>();
-                //services.AddHostedService<MsgNThenService>();
+                services.AddMsgNThenServer();
             });
         }
     }
