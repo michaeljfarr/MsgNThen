@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HostFiltering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Builder;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -23,20 +24,99 @@ using Microsoft.Extensions.Options;
 
 namespace MsgNThen.Samples.Web
 {
+    //public class MsgNThenContextFactory : IHttpContextFactory
+    //{
+    //    private DefaultHttpContextFactory _df;
+
+    //    public MsgNThenContextFactory(IServiceProvider serviceProvider)
+    //    {
+    //        _df = new DefaultHttpContextFactory(serviceProvider);
+    //    }
+    //    HttpContext IHttpContextFactory.Create(IFeatureCollection featureCollection)
+    //    {
+    //        return _df.Create(featureCollection);
+    //    }
+
+    //    public void Dispose(HttpContext httpContext)
+    //    {
+    //        _df.Dispose(httpContext);
+    //    }
+    //}
+
+    public class MsgNThenServer : IServer
+    {
+        public MsgNThenServer()
+        {
+            Features = new FeatureCollection();
+            //MsgNThenRequestFeature Features.Set<IHttpRequestFeature>((IHttpRequestFeature)new HttpRequestFeature());
+            Features.Set<IHttpResponseFeature>((IHttpResponseFeature)new HttpResponseFeature());
+
+        }
+        public void Dispose()
+        {
+        }
+
+        public Task StartAsync<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
+        {
+            var bytes = new byte[1];
+            var requestFeatures = new FeatureCollection();
+            var messageRequestFeature = new HttpRequestFeature();
+            messageRequestFeature.Path = "/weatherforecast";
+            messageRequestFeature.Body = new MemoryStream(bytes);
+            messageRequestFeature.Method = "GET";
+            messageRequestFeature.Headers = new HeaderDictionary();
+            var responseStream = new MemoryStream();
+            var responseBody = new StreamResponseBodyFeature(responseStream);
+            var httpResponseFeature = new HttpResponseFeature { Body = responseStream };
+
+            requestFeatures.Set<IHttpResponseBodyFeature>(responseBody);
+            requestFeatures.Set<IHttpRequestFeature>(messageRequestFeature);
+            requestFeatures.Set<IHttpResponseFeature>(httpResponseFeature);
+            var context = application.CreateContext(requestFeatures);
+            application.ProcessRequestAsync(context);
+
+            return Task.Delay(100);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.Delay(100);
+        }
+
+        public IFeatureCollection Features { get; }
+    }
+    //public class MsgNThenService : IHostedService
+    //{
+    //    public Task StartAsync(CancellationToken cancellationToken)
+    //    {
+    //        return Task.Delay(100);
+    //    }
+
+    //    public Task StopAsync(CancellationToken cancellationToken)
+    //    {
+    //        return Task.Delay(100);
+    //    }
+    //}
     public class Program
     {
         public static async Task Main(string[] args)
         {
+            //We should be an IHostedService
             var hostBuilder = CreateHostBuilder(args);
             var build = hostBuilder.Build();
+            
+            //this._hostedServices = this.Services.GetService<IEnumerable<IHostedService>>();
+            var applicationBuilderFactory = build.Services.GetRequiredService<IApplicationBuilderFactory>();
+            var contextFactory = build.Services.GetRequiredService<IHttpContextFactory>();
+            var hostedServices = build.Services.GetRequiredService<IEnumerable<IHostedService>>();
+            build.Run();
+
             var featureCollection = new FeatureCollection();
             featureCollection.Set<IHttpRequestFeature>((IHttpRequestFeature)new HttpRequestFeature());
             featureCollection.Set<IHttpResponseFeature>((IHttpResponseFeature)new HttpResponseFeature());
+            var applicationBuilder = applicationBuilderFactory.CreateBuilder(featureCollection);
 
-            var applicationBuilder = build.Services.GetRequiredService<IApplicationBuilderFactory>().CreateBuilder(featureCollection);
-            var contextFactory = build.Services.GetRequiredService<IHttpContextFactory>();
-            
-            Startup.ConfigureStatic(applicationBuilder);
+            //Startup.ConfigureStatic(applicationBuilder);
             var testDelegate = applicationBuilder.Build();
 
             var context = contextFactory.Create(featureCollection);
@@ -62,9 +142,20 @@ namespace MsgNThen.Samples.Web
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             MsgNThenHost.CreateDefaultBuilder(args)
+                .ConfigureMsgNThenHost(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
+
+        public static IHostBuilder CreateHostBuilderStandard(string[] args) =>
+            Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
+                })
+                .ConfigureServices(services =>
+                {
+                    //services.AddHostedService<MsgNThenService>();
                 });
 
     }
@@ -116,8 +207,15 @@ namespace MsgNThen.Samples.Web
             return builder;
         }
 
-        public static IHostBuilder ConfigureWebHostDefaults(this IHostBuilder builder, Action<IWebHostBuilder> configure)
+        public static IHostBuilder ConfigureMsgNThenHost(this IHostBuilder builder, Action<IWebHostBuilder> configure)
         {
+            //This adds GenericWebHostService, but without Microsoft.AspNetCore.WebHost.ConfigureWebDefaults which excludes:
+            // - UseStaticWebAssets, UseKestrel, UseIIS and UseIISIntegration
+            // - UseKestrel creates a KestrelServer:IServer
+            builder.ConfigureServices((hostingContext, services) =>
+            {
+                //services.AddSingleton<IHttpContextFactory, MsgNThenContextFactory>();
+            });
             return builder.ConfigureWebHost(webHostBuilder =>
             {
                 configure(webHostBuilder);
@@ -130,7 +228,10 @@ namespace MsgNThen.Samples.Web
             });
             builder.ConfigureServices((hostingContext, services) =>
             {
+                
                 services.AddRouting();
+                services.AddSingleton<IServer, MsgNThenServer>();
+                //services.AddHostedService<MsgNThenService>();
             });
         }
     }
