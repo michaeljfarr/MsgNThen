@@ -29,38 +29,6 @@ using RabbitMQ.Client.Framing;
 
 namespace MsgNThen.Samples.Web
 {
-    //public class MsgNThenContextFactory : IHttpContextFactory
-    //{
-    //    private DefaultHttpContextFactory _df;
-
-    //    public MsgNThenContextFactory(IServiceProvider serviceProvider)
-    //    {
-    //        _df = new DefaultHttpContextFactory(serviceProvider);
-    //    }
-    //    HttpContext IHttpContextFactory.Create(IFeatureCollection featureCollection)
-    //    {
-    //        return _df.Create(featureCollection);
-    //    }
-
-    //    public void Dispose(HttpContext httpContext)
-    //    {
-    //        _df.Dispose(httpContext);
-    //    }
-    //}
-
-    
-    //public class MsgNThenService : IHostedService
-    //{
-    //    public Task StartAsync(CancellationToken cancellationToken)
-    //    {
-    //        return Task.Delay(100);
-    //    }
-
-    //    public Task StopAsync(CancellationToken cancellationToken)
-    //    {
-    //        return Task.Delay(100);
-    //    }
-    //}
     public class Program
     {
         public static async Task Main(string[] args)
@@ -81,97 +49,21 @@ namespace MsgNThen.Samples.Web
             await startTask;
         }
 
+
+        //Using ConfigureWebHost instead of ConfigureWebHostDefaults still adds GenericWebHostService, but without
+        //invoking Microsoft.AspNetCore.WebHost.ConfigureWebDefaults which excludes:
+        // - UseStaticWebAssets, UseKestrel, UseIIS and UseIISIntegration
+        // - UseKestrel creates a KestrelServer:IServer to handle the HTTP protocol, but we use MsgNThenServer just to direct messages from Rabbit.
+
         public static IHostBuilder CreateHostBuilder(string[] args) =>
-            MsgNThenHost.CreateDefaultBuilder(args)
-                .ConfigureMsgNThenHost(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
-
-        public static IHostBuilder CreateHostBuilderStandard(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
+                .ConfigureWebHost(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                })
-                .ConfigureServices(services =>
+                }).ConfigureServices(services =>
                 {
-                    //services.AddHostedService<MsgNThenService>();
+                    services.AddMsgNThenServer();
                 });
 
-    }
-
-    public static class MsgNThenHost
-    {
-
-        public static IHostBuilder CreateDefaultBuilder(string[] args)
-        {
-            var builder = new HostBuilder();
-
-            builder.ConfigureAppConfiguration((hostingContext, config) =>
-            {
-                var env = hostingContext.HostingEnvironment;
-
-                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                      .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
-
-                if (env.IsDevelopment())
-                {
-                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                    if (appAssembly != null)
-                    {
-                        config.AddUserSecrets(appAssembly, optional: true);
-                    }
-                }
-
-                config.AddEnvironmentVariables();
-
-                if (args != null)
-                {
-                    config.AddCommandLine(args);
-                }
-            })
-            .ConfigureLogging((hostingContext, logging) =>
-            {
-                logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-                logging.AddConsole();
-                logging.AddDebug();
-                logging.AddEventSourceLogger();
-            }).
-            UseDefaultServiceProvider((context, options) =>
-            {
-                options.ValidateScopes = context.HostingEnvironment.IsDevelopment();
-            });
-
-            ConfigureWebDefaults(builder);
-
-            return builder;
-        }
-
-        public static IHostBuilder ConfigureMsgNThenHost(this IHostBuilder builder, Action<IWebHostBuilder> configure)
-        {
-            //This adds GenericWebHostService, but without Microsoft.AspNetCore.WebHost.ConfigureWebDefaults which excludes:
-            // - UseStaticWebAssets, UseKestrel, UseIIS and UseIISIntegration
-            // - UseKestrel creates a KestrelServer:IServer to handle the HTTP protocol, but we use MsgNThenServer just to direct messages from Rabbit.
-            builder.ConfigureServices((hostingContext, services) =>
-            {
-                //services.AddSingleton<IHttpContextFactory, MsgNThenContextFactory>();
-            });
-            return builder.ConfigureWebHost(webHostBuilder =>
-            {
-                configure(webHostBuilder);
-            });
-        }
-        internal static void ConfigureWebDefaults(IHostBuilder builder)
-        {
-            builder.ConfigureAppConfiguration((ctx, cb) =>
-            {
-            });
-            builder.ConfigureServices((hostingContext, services) =>
-            {
-                services.AddRouting();
-                services.AddMsgNThenServer();
-            });
-        }
     }
 }
