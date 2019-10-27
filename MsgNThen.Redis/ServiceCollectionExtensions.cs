@@ -42,7 +42,7 @@ namespace MsgNThen.Redis
         }
 
 
-        public static void AddRedisPipework(this IServiceCollection services)
+        public static void AddRedisTaskReader(this IServiceCollection services)
         {
             services.AddSingleton<IRedisTaskFunnel, RedisTaskFunnel>();
             services.AddSingleton<ITaskReader>(sp=> new AtLeastOnceTaskReader(sp.GetRequiredService<ILogger<AtLeastOnceTaskReader>>(), sp.GetRequiredService<IRedisTaskFunnel>(), sp.GetRequiredService<Dictionary<string, ITaskExecutor>>(), 5));

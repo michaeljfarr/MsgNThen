@@ -158,7 +158,7 @@ namespace MsgNThen.Rabbit.Tests
 
             var services = new ServiceCollection();
             services.ConfigureRabbit(configuration);
-            services.AddRabbit();
+            services.AddMsgnThenRabbit();
             services.AddLogging();
             return services;
         }

@@ -180,7 +180,7 @@ namespace MsgNThen.Redis.Tests
             services.ConfigureRedis(configuration);
             services.AddRedisFactory();
             services.AddRedisMonitor();
-            services.AddRedisPipework();
+            services.AddRedisTaskReader();
             services.AddRedisNThenEventHandler();
             services.AddLogging();
             return services;

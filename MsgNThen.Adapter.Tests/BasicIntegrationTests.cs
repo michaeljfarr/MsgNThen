@@ -25,11 +25,11 @@ namespace MsgNThen.Adapter.Tests
             var services = new ServiceCollection();
             services.ConfigureRabbit(configuration);
             services.ConfigureRedis(configuration);
-            services.AddRabbit();
+            services.AddMsgnThenRabbit();
             services.AddLogging();
             services.AddRedisFactory();
             services.AddRedisMonitor();
-            services.AddRedisPipework();
+            services.AddRedisTaskReader();
             services.AddRedisNThenEventHandler();
             services.AddMsgNThenAdapter();
 

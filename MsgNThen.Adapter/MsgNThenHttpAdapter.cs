@@ -15,12 +15,15 @@ namespace MsgNThen.Adapter
     {
         private readonly ILogger _logger;
         private readonly IHttpApplication<TContext> _application;
+        private readonly IMessageGroupHandler _messageGroupHandler;
         private readonly CancellationToken _cancellationToken;
 
-        public MsgNThenHttpAdapter(ILogger logger, IHttpApplication<TContext> application, CancellationToken cancellationToken)
+        public MsgNThenHttpAdapter(ILogger logger, CancellationToken cancellationToken,
+            IHttpApplication<TContext> application, IMessageGroupHandler messageGroupHandler)
         {
             _logger = logger;
             _application = application;
+            _messageGroupHandler = messageGroupHandler;
             _cancellationToken = cancellationToken;
         }
 
@@ -53,7 +56,10 @@ namespace MsgNThen.Adapter
                         messageRequestFeature.Headers[property.Key] = property.Value?.ToString();
                     }
                 }
-                
+
+                var groupInfo = GetMessageGroupInfo(message);
+
+
                 messageRequestFeature.Headers["MessageId"] = message.Properties.MessageId;
                 messageRequestFeature.Headers["AppId"] = message.Properties.AppId;
                 messageRequestFeature.Headers["ReplyTo"] = message.Properties.ReplyTo;
@@ -71,6 +77,12 @@ namespace MsgNThen.Adapter
                 requestFeatures.Set<IHttpResponseFeature>(httpResponseFeature);
                 var context = _application.CreateContext(requestFeatures);
                 await _application.ProcessRequestAsync(context);
+
+                if (groupInfo != null)
+                {
+                    _messageGroupHandler.MessageHandled(groupInfo.Value.messageGroupId, groupInfo.Value.messageId);
+                }
+
                 return AckResult.Ack;
             }
             catch (Exception e)
@@ -78,6 +90,20 @@ namespace MsgNThen.Adapter
                 _logger.LogError(e, "HandleMessageTask Failed");
                 return AckResult.NackQuit;
             }
+        }
+
+        private static (Guid messageGroupId, Guid messageId)? GetMessageGroupInfo(IHandledMessage message)
+        {
+            object groupIdObj = null;
+            if ((message.Properties.Headers?.TryGetValue("MessageGroupId", out groupIdObj) ?? false) &&
+                (groupIdObj is string groupIdStr) &&
+                Guid.TryParse(groupIdStr, out var messageGroupId) &&
+                Guid.TryParse(message.Properties.MessageId, out var messageId))
+            {
+                return (messageGroupId, messageId);
+            }
+
+            return null;
         }
 
         public void Listen()

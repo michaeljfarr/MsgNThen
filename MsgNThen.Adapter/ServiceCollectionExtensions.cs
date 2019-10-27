@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.Extensions.DependencyInjection;
 using MsgNThen.Interfaces;
+using MsgNThen.Redis.NThen;
 
 
 namespace MsgNThen.Adapter
@@ -19,5 +20,11 @@ namespace MsgNThen.Adapter
             services.AddSingleton<IMsgNThenApdapterFactory>(a =>
                 (IMsgNThenApdapterFactory) a.GetRequiredService<IMessageHandler>());
         }
+
+        public static void AddDummyAndThenMessageDeliverer(this IServiceCollection services)
+        {
+            services.AddSingleton<IAndThenMessageDeliverer, DummyAndThenMessageDeliverer>();
+        }
+
     }
 }

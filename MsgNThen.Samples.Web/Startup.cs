@@ -1,15 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using MsgNThen.Adapter;
+using MsgNThen.Rabbit;
+using MsgNThen.Redis;
 
 namespace MsgNThen.Samples.Web
 {
@@ -22,10 +16,29 @@ namespace MsgNThen.Samples.Web
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddLogging();
             services.AddControllers();
+
+            //either rabbit, sqs or the Redis queue implementation is required
+            services.ConfigureRabbit(Configuration);
+            services.AddMsgnThenRabbit();
+
+            //RedisTask reader will be an alternative to rabbit, but currently its TaskReader doesn't yet call IMessageHandler.HandleMessageTask
+            services.AddRedisTaskReader();
+
+            //Redis is required if MsgNThen message dependencies are required (send or receive) or for its TaskReader, otherwise it can be left out
+            services.ConfigureRedis(Configuration);
+            services.AddRedisFactory();
+            services.AddRedisNThenEventHandler();
+
+            //redis monitor is not required at all, and really should not be included in production code.
+            services.AddRedisMonitor();
+
+            //we haven't yet built the routing logic to deliver messages to different locations.
+            //although it would be trivial to map the outgoing messages via Rabbit.
+            services.AddDummyAndThenMessageDeliverer();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

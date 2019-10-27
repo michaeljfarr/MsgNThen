@@ -16,7 +16,7 @@ namespace MsgNThen.Rabbit
             return services.Configure<RabbitConfig>(configuration.GetSection("Rabbit"));
         }
 
-        public static IServiceCollection AddRabbit(this IServiceCollection services)
+        public static IServiceCollection AddMsgnThenRabbit(this IServiceCollection services)
         {
             services.AddSingleton<IRabbitConnectionFactory, RabbitConnectionFactory>();
             services.AddSingleton<IConnection>(a=>a.GetRequiredService<IRabbitConnectionFactory>().Create());

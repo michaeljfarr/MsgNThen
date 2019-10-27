@@ -10,11 +10,13 @@ namespace MsgNThen.Adapter
     class MsgNThenApdapterFactory : IMsgNThenApdapterFactory, IMessageHandler
     {
         private readonly ILogger<MsgNThenApdapterFactory> _logger;
+        private readonly IMessageGroupHandler _messageGroupHandler;
         private IMsgNThenHttpAdapter _msgNThenHttpAdapter;
 
-        public MsgNThenApdapterFactory(ILogger<MsgNThenApdapterFactory> logger)
+        public MsgNThenApdapterFactory(ILogger<MsgNThenApdapterFactory> logger, IMessageGroupHandler messageGroupHandler)
         {
             _logger = logger;
+            _messageGroupHandler = messageGroupHandler;
         }
 
         public IMsgNThenHttpAdapter Start<TContext>(IHttpApplication<TContext> application, CancellationToken cancellationToken)
@@ -24,7 +26,7 @@ namespace MsgNThen.Adapter
                 //todo: create MsgNThen core exception
                 throw new Exception("MsgNThenApdapterFactory.Start called more than once.");
             }
-            _msgNThenHttpAdapter = new MsgNThenHttpAdapter<TContext>(_logger, application, cancellationToken);
+            _msgNThenHttpAdapter = new MsgNThenHttpAdapter<TContext>(_logger, cancellationToken, application, _messageGroupHandler);
             return _msgNThenHttpAdapter;
         }
 
