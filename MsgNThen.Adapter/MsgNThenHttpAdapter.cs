@@ -40,7 +40,14 @@ namespace MsgNThen.Adapter
                 //note: This may not be the correct way to implement the FeatureCollection.  In most of the available samples, 
                 //features are static and the HttpContext is customized so it can be manipulated directly within this method.
                 //For the time being, this approach is very easy and provides better decoupling.  When things get more complicated
-                //we may rever to the other approach.
+                //we may revert to the other approach.
+
+                //Typical webserver is a lot more complicated because it needs to handle the http protocol.HttpProtocol.ProcessRequests
+                //and can handle multiple requests via the same connection.  MsgNThen is entirely reliant on RabbitMQ client to handle all
+                //such issues.
+                //The Protocol can't directly access the HttpContext itself (which is really strange at first glance). Instead it implements
+                //"IFeature"s that the HttpContext uses to implement its properties.
+
                 var requestFeatures = new FeatureCollection();
                 var messageRequestFeature = new HttpRequestFeature
                 {
@@ -77,6 +84,10 @@ namespace MsgNThen.Adapter
                 requestFeatures.Set<IHttpResponseFeature>(httpResponseFeature);
                 var context = _application.CreateContext(requestFeatures);
                 await _application.ProcessRequestAsync(context);
+
+                //todo: implement result forwarding (using something like IAndThenMessageDeliverer)
+                //use Redis and S3 as result stores so that the final andThen can use the data collected from
+                //those requests.
 
                 if (groupInfo != null)
                 {

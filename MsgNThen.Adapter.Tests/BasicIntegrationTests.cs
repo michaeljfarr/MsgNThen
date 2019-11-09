@@ -33,6 +33,8 @@ namespace MsgNThen.Adapter.Tests
             services.AddRedisNThenEventHandler();
             services.AddMsgNThenAdapter();
 
+            services.AddDummyAndThenMessageDeliverer();
+
             return services;
         }
 

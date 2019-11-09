@@ -10,6 +10,8 @@ namespace MsgNThen.Adapter
             //todo: make SimpleMessage more generic, use Uris to:
             // + target SQS, RabbitMQ, Redis, Http endpoints
             // + will use dictionary to make scheme handlers
+
+            
         }
     }
 }

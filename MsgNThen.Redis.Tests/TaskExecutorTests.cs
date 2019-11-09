@@ -115,7 +115,7 @@ namespace MsgNThen.Redis.Tests
         public async Task TestSimpleRedisMessaging()
         {
             //give the task reader a chance to get running
-            await Task.Delay(TimeSpan.FromSeconds(.1));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             _tasksCalled = 0;
 
             var childPipeName = "kittens";
