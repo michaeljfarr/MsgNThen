@@ -20,7 +20,7 @@ namespace MsgNThen.Rabbit
 
         public void BindDirectQueue(string exchangeName, string queueName)
         {
-            _messagePublisher.BindDirectQueue(exchangeName, queueName);
+            _messagePublisher.BindDirectQueue(exchangeName, queueName, "");
         }
 
         public void PublishSingle(SimpleMessage message, SimpleMessage andThen, AndThenDeliveryMode mode)

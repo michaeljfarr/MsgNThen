@@ -67,12 +67,12 @@ namespace MsgNThen.Adapter
                 var groupInfo = GetMessageGroupInfo(message);
 
 
-                messageRequestFeature.Headers["MessageId"] = message.Properties.MessageId;
-                messageRequestFeature.Headers["AppId"] = message.Properties.AppId;
-                messageRequestFeature.Headers["ReplyTo"] = message.Properties.ReplyTo;
-                messageRequestFeature.Headers["CorrelationId"] = message.Properties.CorrelationId;
+                messageRequestFeature.Headers[HeaderConstants.MessageId] = message.Properties.MessageId;
+                messageRequestFeature.Headers[HeaderConstants.AppId] = message.Properties.AppId;
+                messageRequestFeature.Headers[HeaderConstants.ReplyTo] = message.Properties.ReplyTo;
+                messageRequestFeature.Headers[HeaderConstants.CorrelationId] = message.Properties.CorrelationId;
                 //note: https://www.rabbitmq.com/validated-user-id.html
-                messageRequestFeature.Headers["UserId"] = message.Properties.UserId;
+                messageRequestFeature.Headers[HeaderConstants.UserId] = message.Properties.UserId;
                 messageRequestFeature.Headers.ContentLength = message.Body.LongLength;
                 messageRequestFeature.Headers[HeaderNames.ContentType] = message.Properties.ContentType;
 
@@ -85,13 +85,27 @@ namespace MsgNThen.Adapter
                 var context = _application.CreateContext(requestFeatures);
                 await _application.ProcessRequestAsync(context);
 
-                //todo: implement result forwarding (using something like IAndThenMessageDeliverer)
-                //use Redis and S3 as result stores so that the final andThen can use the data collected from
-                //those requests.
-
                 if (groupInfo != null)
                 {
                     _messageGroupHandler.MessageHandled(groupInfo.Value.messageGroupId, groupInfo.Value.messageId);
+                }
+
+                if (responseStream.Length > 0)
+                {
+                    if (groupInfo != null)
+                    {
+                        //when the application populated the response we could either
+                        // - store this information so that the andThen processor can pick it up later or
+                        // - stream this request as data to the ReplyTo address for the same reason.
+                        //use Redis and S3 as result stores so that the final andThen can use the data collected from
+                        //those requests.
+                    }
+                    else                    {
+                        //since this isn't an andThen request, we should send this to the ReplyTo address
+                        //todo: XXXX implement result forwarding (using something like IAndThenMessageDeliverer)
+                    }
+                    //any/all of the above scenarios are handled by the following interface by using the
+                    //replyHandler to interpret the response and the message.Properties.ReplyTo address.
                 }
 
                 return AckResult.Ack;
@@ -107,7 +121,7 @@ namespace MsgNThen.Adapter
         {
             //todo: make string constants (after work on generic listener and URI delivery method)
             object groupIdObj = null;
-            if ((message.Properties.Headers?.TryGetValue("MessageGroupId", out groupIdObj) ?? false) &&
+            if ((message.Properties.Headers?.TryGetValue(HeaderConstants.MessageGroupId, out groupIdObj) ?? false) &&
                 (groupIdObj is string groupIdStr) &&
                 Guid.TryParse(groupIdStr, out var messageGroupId) &&
                 Guid.TryParse(message.Properties.MessageId, out var messageId))

@@ -21,12 +21,12 @@ namespace MsgNThen.Rabbit
             services.AddSingleton<IRabbitConnectionFactory, RabbitConnectionFactory>();
             services.AddSingleton<IConnection>(a=>a.GetRequiredService<IRabbitConnectionFactory>().Create());
             services.AddSingleton<IRabbitMqListener, RabbitMqListener>();
-            services.AddSingleton<IMessagePublisher, RabbitMessagePublisher>();
+            services.AddSingleton<RabbitMessagePublisher>();
+            services.AddSingleton<IMessagePublisher>(a=>a.GetRequiredService<RabbitMessagePublisher>());
+            services.AddSingleton<IUriDeliveryScheme>(a => a.GetRequiredService<RabbitMessagePublisher>());
             services.AddSingleton<IMessageAndThenPublisher, RabbitMessageAndThenPublisher>();
-            
             return services;
         }
-
 
         private static string RequireConfig(this IConfiguration configuration, string key)
         {

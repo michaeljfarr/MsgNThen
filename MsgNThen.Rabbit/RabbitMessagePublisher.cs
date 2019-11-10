@@ -1,10 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using MsgNThen.Interfaces;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Framing;
 
 namespace MsgNThen.Rabbit
 {
-    public class RabbitMessagePublisher : IMessagePublisher
+    public class RabbitMessagePublisher : IMessagePublisher, IUriDeliveryScheme
     {
         private readonly IModel _channel;
 
@@ -13,11 +17,11 @@ namespace MsgNThen.Rabbit
             _channel = connection.CreateModel();
         }
 
-        public void BindDirectQueue(string exchangeName, string queueName)
+        public void BindDirectQueue(string exchangeName, string queueName, string routingKey)
         {
             _channel.ExchangeDeclare(exchangeName, ExchangeType.Direct);
             _channel.QueueDeclare(queueName, false, false, false, null);
-            _channel.QueueBind(queueName, exchangeName, "", null);
+            _channel.QueueBind(queueName, exchangeName, routingKey, null);
         }
 
         public void Publish(IDictionary<string, object> extraHeaders, SimpleMessage message)
@@ -73,6 +77,52 @@ namespace MsgNThen.Rabbit
             }
 
             return basicProperties;
+        }
+
+        public string Scheme => "rabbit";
+
+        public Task Deliver(Uri destination, MsgNThenMessage message)
+        {
+            //rabbitmq://<exchangename>/<routingKey>
+            var exchange = destination.Host;
+            var routingKey = Uri.UnescapeDataString(destination.PathAndQuery).TrimStart('/');
+            var basicProperties = new BasicProperties()
+            {
+                Headers = new Dictionary<string, object>()
+            };
+            if (message.Headers != null)
+            {
+                var nonHeaders = new HashSet<string>()
+                {
+                    HeaderConstants.MessageId, HeaderConstants.AppId, HeaderConstants.ReplyTo, HeaderConstants.UserId,
+                    HeaderConstants.CorrelationId
+                };
+                DoAssignment(message.Headers[HeaderConstants.MessageId], val => basicProperties.MessageId = val);
+                DoAssignment(message.Headers[HeaderConstants.AppId], val => basicProperties.AppId = val);
+                DoAssignment(message.Headers[HeaderConstants.ReplyTo], val => basicProperties.ReplyTo = val);
+                DoAssignment(message.Headers[HeaderConstants.UserId], val => basicProperties.UserId = val);
+                DoAssignment(message.Headers[HeaderConstants.CorrelationId], val => basicProperties.CorrelationId = val);
+                //DoAssignment(message.Headers[HeaderConstants.DeliveryMode], val => basicProperties.DeliveryMode = val);
+                foreach (var header in message.Headers)
+                {
+                    if (!nonHeaders.Contains(header.Key))
+                    {
+                        basicProperties.Headers[header.Key] = header.Value;
+                    }
+                }
+            }
+
+            var body = ((MemoryStream)message.Body).ToArray();
+            _channel.BasicPublish(exchange, routingKey, true, basicProperties, body);
+            return Task.CompletedTask;
+        }
+
+        private static void DoAssignment(string message, Action<string> basicProperties)
+        {
+            if (message != null)
+            {
+                basicProperties(message);
+            }
         }
     }
 }

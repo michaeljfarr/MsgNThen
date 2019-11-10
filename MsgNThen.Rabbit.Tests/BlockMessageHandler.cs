@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MsgNThen.Interfaces;
 
 namespace MsgNThen.Rabbit.Tests
 {
-    
+
     public class BlockNThenMessageHandler : IMessageHandler
     {
         private readonly IMessageGroupHandler _messageGroupHandler;
@@ -32,7 +33,7 @@ namespace MsgNThen.Rabbit.Tests
             if (Guid.TryParse(message.Properties.MessageId, out var messageId) &&
                 message.Properties.Headers.TryGetValue("MessageGroupId", out var groupIdObj))
             {
-                var groupId = new Guid((byte[]) groupIdObj);
+                var groupId = new Guid((byte[])groupIdObj);
                 _messageGroupHandler.MessageHandled(groupId, messageId);
             }
             else

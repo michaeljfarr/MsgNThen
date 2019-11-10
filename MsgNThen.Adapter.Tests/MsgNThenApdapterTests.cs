@@ -47,7 +47,7 @@ namespace MsgNThen.Adapter.Tests
 
         private static bool CheckRequest(IFeatureCollection x, IHandledMessage message, byte[] body)
         {
-            x.Get<IHttpRequestFeature>().Headers["MessageId"].ToString().Should().Be( message.Properties.MessageId);
+            x.Get<IHttpRequestFeature>().Headers[HeaderConstants.MessageId].ToString().Should().Be( message.Properties.MessageId);
             ((MemoryStream)x.Get<IHttpRequestFeature>().Body).ToArray().Should().BeEquivalentTo(body);
             return true;
         }

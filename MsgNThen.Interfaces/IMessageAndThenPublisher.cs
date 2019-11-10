@@ -45,7 +45,7 @@ namespace MsgNThen.Interfaces
 
     public interface IMessagePublisher
     {
-        void BindDirectQueue(string exchangeName, string queueName);
+        void BindDirectQueue(string exchangeName, string queueName, string routingKey);
         void Publish(IDictionary<string, object> extraHeaders, SimpleMessage message);
         int PublishBatch(IDictionary<string, object> extraHeaders, IEnumerable<SimpleMessage> messages,
             AndThenDeliveryMode mode);
