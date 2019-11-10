@@ -45,6 +45,7 @@ namespace MsgNThen.Redis
         public static void AddRedisTaskReader(this IServiceCollection services)
         {
             services.AddSingleton<IRedisTaskFunnel, RedisTaskFunnel>();
+            services.AddSingleton<IUriDeliveryScheme, RedisDeliveryScheme>();
             services.AddSingleton<ITaskReader>(sp=> new AtLeastOnceTaskReader(sp.GetRequiredService<ILogger<AtLeastOnceTaskReader>>(), sp.GetRequiredService<IRedisTaskFunnel>(), sp.GetRequiredService<Dictionary<string, ITaskExecutor>>(), 5));
         }
 

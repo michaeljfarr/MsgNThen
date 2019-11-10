@@ -1,17 +1,13 @@
-using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MsgNThen.Interfaces;
 using MsgNThen.Rabbit;
-using Xunit;
+using MsgNThen.Redis;
 
 namespace MsgNThen.Broker.Tests
 {
     public class TestHelpers
     {
-        
-
         public static ServiceProvider CreateServiceProvider()
         {
             var services = CreateServiceCollection();
@@ -31,6 +27,13 @@ namespace MsgNThen.Broker.Tests
             services.AddBrokers();
             services.AddMsgnThenRabbit();
             services.AddSingleton<IMessageHandler, OneMessageHandler>();
+
+            services.ConfigureRedis(configuration);
+            services.AddRedisFactory();
+            services.AddRedisMonitor();
+            services.AddRedisTaskReader();
+            services.AddRedisNThenEventHandler();
+
             services.AddLogging();
             return services;
         }

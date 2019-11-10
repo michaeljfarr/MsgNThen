@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MsgNThen.Broker\MsgNThen.Broker.csproj" />
     <ProjectReference Include="..\MsgNThen.Rabbit\MsgNThen.Rabbit.csproj" />
+    <ProjectReference Include="..\MsgNThen.Redis\MsgNThen.Redis.csproj" />
   </ItemGroup>
 
   <ItemGroup>

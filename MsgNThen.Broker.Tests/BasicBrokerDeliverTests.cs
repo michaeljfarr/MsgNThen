@@ -15,6 +15,22 @@ namespace MsgNThen.Broker.Tests
     public class BasicBrokerDeliverTests
     {
         [Fact]
+        public async Task TestRedis()
+        {
+            var sp = TestHelpers.CreateServiceProvider();
+            var deliverer = sp.GetService<IUriDeliveryBroker>();
+            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hi There"));
+
+            await deliverer.Deliver(new Uri("redis://blank/parent/child"), new MsgNThenMessage()
+            {
+                Body = stream,
+                Headers = new HeaderDictionary() { { HeaderConstants.MessageId, new StringValues("Test1") } },
+                ReasonPhrase = "OK",
+                StatusCode = 200
+            });
+        }
+
+        [Fact]
         public async Task TestS3()
         {
             var sp = TestHelpers.CreateServiceProvider();
