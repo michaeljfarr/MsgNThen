@@ -16,13 +16,17 @@ namespace MsgNThen.Broker
 
         public S3DeliveryScheme(IOptionsMonitor<AwsCredentialRoot> credentials)
         {
+            if (credentials.CurrentValue.AwsCredentials == null)
+            {
+                throw new ArgumentNullException(nameof(credentials.CurrentValue.AwsCredentials));
+            }
             _credentials = credentials.CurrentValue.AwsCredentials.ToDictionary(a=>a.Name);
         }
         public string Scheme => "s3";
         public async Task Deliver(Uri destination, MsgNThenMessage message)
         {
             //https://s3.us-east-2.amazonaws.com/my-bucket-name/filename
-            //s3://john.doe@my-bucket-name/filename
+            //s3://john.doe@my-bucket-name/filename[
             //s3://<credentialName>@<bucketname>/filename
             var credentials = GetCredentials(destination);
             var bucketName = destination.Host;

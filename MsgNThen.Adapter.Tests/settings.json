@@ -1,3 +1,10 @@
 ﻿{
-  "RedisConnection": "localhost:6379"
+  "RedisConnection": "localhost:6379",
+  "Rabbit": {
+    "UserName": "user",
+    "VirtualHost": "/",
+    "Password": "password",
+    "Port": 5672,
+    "HostNames": [ "localhost" ]
+  }
 }

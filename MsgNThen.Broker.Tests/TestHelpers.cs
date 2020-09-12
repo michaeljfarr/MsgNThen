@@ -24,6 +24,8 @@ namespace MsgNThen.Broker.Tests
 
             var services = new ServiceCollection();
             services.ConfigureAwsCredentials(configuration);
+
+            services.ConfigureRabbit(configuration);
             services.AddBrokers();
             services.AddMsgnThenRabbit();
             services.AddSingleton<IMessageHandler, OneMessageHandler>();
