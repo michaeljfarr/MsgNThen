@@ -79,7 +79,7 @@ namespace MsgNThen.Adapter
 
                 var responseStream = new MemoryStream();
                 var responseBody = new StreamResponseBodyFeature(responseStream);
-                var httpResponseFeature = new HttpResponseFeature { Body = responseStream };
+                var httpResponseFeature = new HttpResponseFeature() { Body = responseStream };
                 requestFeatures.Set<IHttpResponseBodyFeature>(responseBody);
                 requestFeatures.Set<IHttpRequestFeature>(messageRequestFeature);
                 requestFeatures.Set<IHttpResponseFeature>(httpResponseFeature);

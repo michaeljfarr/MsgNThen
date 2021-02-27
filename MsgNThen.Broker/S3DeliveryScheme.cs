@@ -35,7 +35,7 @@ namespace MsgNThen.Broker
             var messageGroupId = message.Headers[HeaderConstants.MessageGroupId];
             var correlationId = message.Headers[HeaderConstants.CorrelationId];
             var fileKey = string.Format(pathAndQuery, messageId, messageGroupId, correlationId);
-            var queryDictionary = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(destination.Query);
+            var queryDictionary = QueryHelpers.ParseQuery(destination.Query);
             if (message.Body.CanSeek)
             {
                 message.Body.Position = 0;

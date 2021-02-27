@@ -3,12 +3,12 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using MsgNThen.Interfaces;
 using MsgNThen.Rabbit;
 using Xunit;
+using MsgNThen.Broker.Tests.HttpHelpers;
 
 namespace MsgNThen.Broker.Tests
 {
