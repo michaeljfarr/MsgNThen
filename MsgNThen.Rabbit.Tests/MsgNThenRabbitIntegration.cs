@@ -165,7 +165,7 @@ namespace MsgNThen.Rabbit.Tests
 
         public void Dispose()
         {
-            _rabbit.Close(1000);
+            _rabbit.Close(TimeSpan.FromSeconds(1));
         }
 
     }

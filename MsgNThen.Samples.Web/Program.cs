@@ -34,7 +34,7 @@ namespace MsgNThen.Samples.Web
             await Task.Delay(500);
             
             IHandledMessage message = new HandledMessageWrapper(new BasicDeliverEventArgs(
-                "consumer", 1, false, "ex", "exampleroute", new BasicProperties(), new byte[0]));
+                "consumer", 1, false, "ex", "exampleroute", null, new byte[0]));
             await msgNThenHandler.HandleMessageTask(message);
         }
 

@@ -36,8 +36,11 @@ namespace MsgNThen.Adapter.Tests
             var cancellationTokenSource = new CancellationTokenSource();
             var adapter = apdapterFactory.Start(httpApplication, cancellationTokenSource.Token);
             var body = new byte[0];
+            var rabbitMessagePublisher = serviceProvider.GetRequiredService<RabbitMessagePublisher>();
+            var basicProperties = rabbitMessagePublisher.CreateBasicProperties();
+            basicProperties.MessageId = Guid.NewGuid().ToString();
             IHandledMessage message = new HandledMessageWrapper(new BasicDeliverEventArgs(
-                "consumer", 1, false, "ex", "rout", new BasicProperties(){MessageId = Guid.NewGuid().ToString()}, body));
+                "consumer", 1, false, "ex", "rout", basicProperties, body));
             var res = await adapter.HandleMessageTask(message);
             res.Should().Be(AckResult.Ack);
             httpApplication.Received().CreateContext(Arg.Is<IFeatureCollection>(x =>

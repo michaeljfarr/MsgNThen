@@ -137,7 +137,11 @@ namespace MsgNThen.Rabbit
 
             public bool Stop()
             {
-                _channel.BasicCancel(_consumer.ConsumerTag);
+                foreach (var consumerTag in _consumer.ConsumerTags)
+                {
+                    _channel.BasicCancel(consumerTag);
+                }
+                
                 return !_consumer.IsRunning;// IsRunning should be false now.
             }
 

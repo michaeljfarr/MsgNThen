@@ -1,9 +1,11 @@
-﻿namespace MsgNThen.Interfaces
+﻿using System;
+
+namespace MsgNThen.Interfaces
 {
     //Todo: rename to IMsgNThenMessage
     public interface IHandledMessage
     {
-        byte[] Body { get;  }
+        ReadOnlyMemory<byte> Body { get;  }
 
         /// <summary>The consumer tag of the consumer that the message
         /// was delivered to.</summary>

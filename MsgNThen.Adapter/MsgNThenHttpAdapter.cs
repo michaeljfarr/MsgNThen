@@ -52,7 +52,8 @@ namespace MsgNThen.Adapter
                 var messageRequestFeature = new HttpRequestFeature
                 {
                     Path = $"/{message.RoutingKey}",
-                    Body = new MemoryStream(bytes),
+                    //fix: use MemoryStream.WriteAsync(ReadOnlyMemory<Byte>)
+                    Body = new MemoryStream(bytes.ToArray()),
                     Method = "GET",
                     Headers = new HeaderDictionary(),
                 };
@@ -73,7 +74,7 @@ namespace MsgNThen.Adapter
                 messageRequestFeature.Headers[HeaderConstants.CorrelationId] = message.Properties.CorrelationId;
                 //note: https://www.rabbitmq.com/validated-user-id.html
                 messageRequestFeature.Headers[HeaderConstants.UserId] = message.Properties.UserId;
-                messageRequestFeature.Headers.ContentLength = message.Body.LongLength;
+                messageRequestFeature.Headers.ContentLength = message.Body.Length;
                 messageRequestFeature.Headers[HeaderNames.ContentType] = message.Properties.ContentType;
 
                 var responseStream = new MemoryStream();

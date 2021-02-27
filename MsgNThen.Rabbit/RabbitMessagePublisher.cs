@@ -80,16 +80,15 @@ namespace MsgNThen.Rabbit
         }
 
         public string Scheme => "rabbit";
-
+        public IBasicProperties CreateBasicProperties() => _channel.CreateBasicProperties();
         public Task Deliver(Uri destination, MsgNThenMessage message)
         {
             //rabbitmq://<exchangename>/<routingKey>
             var exchange = destination.Host;
             var routingKey = Uri.UnescapeDataString(destination.PathAndQuery).TrimStart('/');
-            var basicProperties = new BasicProperties()
-            {
-                Headers = new Dictionary<string, object>()
-            };
+            var basicProperties = _channel.CreateBasicProperties();
+            //Headers = new Dictionary<string, object>()
+            
             if (message.Headers != null)
             {
                 var nonHeaders = new HashSet<string>()

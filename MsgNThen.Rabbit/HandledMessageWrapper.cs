@@ -1,4 +1,5 @@
-﻿using MsgNThen.Interfaces;
+﻿using System;
+using MsgNThen.Interfaces;
 using RabbitMQ.Client.Events;
 
 namespace MsgNThen.Rabbit
@@ -14,7 +15,7 @@ namespace MsgNThen.Rabbit
             _properties = new BasicPropertiesWrapper(deliverEvent.BasicProperties);
         }
 
-        public byte[] Body => _deliverEvent.Body;
+        public ReadOnlyMemory<byte> Body => _deliverEvent.Body;
 
         public string ConsumerTag => _deliverEvent.ConsumerTag;
 

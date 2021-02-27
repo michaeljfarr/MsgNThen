@@ -80,7 +80,7 @@ namespace MsgNThen.Broker.Tests
                 {
                     if (msg.Body.Length == messageBody.Length)
                     {
-                        var res = new Guid(msg.Body);
+                        var res = new Guid(msg.Body.ToArray());
                         if (msgGuid == res)
                         {
                             //yey: we found the message we sent.
