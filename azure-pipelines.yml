@@ -1,0 +1,72 @@
+trigger:
+  - master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  isMasterBranch: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/master')]
+  isReleaseBranch: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')]
+
+name: $(BuildID)
+
+steps:
+  - powershell: |
+      write-host "Build.BuildNumber:$(Build.BuildNumber)"
+      write-host "##vso[task.setvariable variable=BuildRev;isOutput=true]$(Build.BuildNumber)"
+    name: CustomVars
+    displayName: 'Get Build Rev'
+
+  - task: gitversion/setup@0
+    displayName: Run Git Setup
+    inputs:
+      versionSpec: '5.x'
+
+  - task: gitversion/execute@0
+    displayName: Get version from Git
+
+  - task: PowerShell@2
+    displayName: 'Set buildNumber from GitVersion'
+    inputs:
+      targetType: 'inline'
+      script: |
+        $Rev = $(CustomVars.BuildRev)
+        write-host "##vso[build.updatebuildnumber]$(GitVersion.SemVer).$Rev-alpha"
+
+  - task: NuGetAuthenticate@0
+
+  - script: dotnet restore
+    displayName: '[DOTNET] Restore packages'
+
+  - script: dotnet build --no-restore -c $(buildConfiguration) -p:Version=$(Build.BuildNumber)
+    displayName: '[DOTNET] Build'
+
+  - script: dotnet test --no-restore --no-build -c $(buildConfiguration) --logger trx --collect "Code coverage" --filter Category~Unit
+    displayName: '[DOTNET] Test'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish Tests'
+    condition: succeededOrFailed()
+    inputs:
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+
+  - script: dotnet pack --no-restore --no-build -c $(buildConfiguration) -p:Version=$(Build.BuildNumber) -o $(Build.ArtifactStagingDirectory)/
+    displayName: '[DOTNET] Pack'
+
+  - task: NuGetCommand@2
+    condition: and(succeeded(), or(eq(variables.isMasterBranch, true), eq(variables.isReleaseBranch, true)))
+    displayName: '[DOTNET] Push'
+    inputs:
+      command: 'push'
+      packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+      nuGetFeedType: 'internal'
+      publishVstsFeed: 'FileMeta'
+
+#  - task: PublishBuildArtifacts@1
+#    displayName: 'Publish artifacts'
+#    inputs:
+#      pathToPublish: $(Build.ArtifactStagingDirectory)

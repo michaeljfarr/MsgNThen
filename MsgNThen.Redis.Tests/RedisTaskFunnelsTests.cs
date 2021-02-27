@@ -8,6 +8,7 @@ using Xunit;
 
 namespace MsgNThen.Redis.Tests
 {
+    [Collection("NonParallelTests")]
     public class RedisTaskFunnelsTests
     {
         //todo: test that child pipes decay when they are empty.

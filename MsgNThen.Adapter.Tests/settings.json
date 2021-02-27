@@ -1,9 +1,9 @@
 ﻿{
   "RedisConnection": "localhost:6379",
   "Rabbit": {
-    "UserName": "user",
+    "UserName": "guest",
     "VirtualHost": "/",
-    "Password": "password",
+    "Password": "guest",
     "Port": 5672,
     "HostNames": [ "localhost" ]
   }

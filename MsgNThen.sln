@@ -30,6 +30,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MsgNThen.Broker", "MsgNThen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsgNThen.Broker.Tests", "MsgNThen.Broker.Tests\MsgNThen.Broker.Tests.csproj", "{4638A5D1-9005-4191-AAFF-0DD3DBAAD46A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0C6BCA6B-0D02-40CC-8369-5950E6EA7F54}"
+ProjectSection(SolutionItems) = preProject
+	.gitignore = .gitignore
+	LICENSE = LICENSE
+	README.md = README.md
+	azure-pipelines.yml = azure-pipelines.yml
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace MsgNThen.Redis.Tests
 {
+    [Collection("NonParallelTests")]
     public class TaskExecutorTests : IDisposable
     {
         private readonly ITestOutputHelper _output;
@@ -133,7 +134,7 @@ namespace MsgNThen.Redis.Tests
             sent3.Should().BeTrue();
             clients3.Should().BeTrue();
             //wait for it to process all the messages
-            await Task.Delay(TimeSpan.FromSeconds(.1));
+            await Task.Delay(TimeSpan.FromSeconds(0.2));
             _tasksCalled.Should().Be(3);
 
         }

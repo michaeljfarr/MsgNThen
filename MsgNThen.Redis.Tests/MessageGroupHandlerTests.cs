@@ -14,6 +14,7 @@ using Xunit;
 
 namespace MsgNThen.Redis.Tests
 {
+    [Collection("NonParallelTests")]
     public class MessageGroupHandlerTests
     {
         [Fact]
